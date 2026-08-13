@@ -1,0 +1,5 @@
+__pycache__/
+*.py[cod]
+artifacts/raw/*.jsonl
+artifacts/derived/*.json
+paper/rendered/
