@@ -8,7 +8,7 @@ import time
 import uuid
 from pathlib import Path
 
-from recommended import ATTACKS, MANIFEST_SHA256, SPECS, contract_violations, decisions, execute, intended_args, ollama_call, prompt_for
+from recommended import ATTACKS, MANIFEST_SHA256, SPECS, contract_violations, contract_violations_v2, decisions, execute, intended_args, ollama_call, prompt_for
 
 
 ROOT = Path(__file__).resolve().parent
@@ -32,6 +32,12 @@ def smoke_jobs():
     return [(spec, "none", False, index % 4, 0) for index, spec in enumerate(SPECS)]
 
 
+def extended_jobs():
+    attack = [(s, a, True, v, r) for s in SPECS for a in ATTACKS for v in range(4, 12) for r in range(6)]
+    benign = [(s, "none", False, 4 + (r % 8), r) for s in SPECS for r in range(24)]
+    return attack + benign
+
+
 def row_key(row: dict) -> tuple:
     return row["tool"], row["attack"], row["malicious_server"], row["variant"], row["repeat"]
 
@@ -45,13 +51,14 @@ def main():
     parser.add_argument("--smoke", action="store_true")
     parser.add_argument("--shard-count", type=int, default=1)
     parser.add_argument("--shard-index", type=int, default=0)
+    parser.add_argument("--extended", action="store_true")
     args = parser.parse_args()
     args.output.parent.mkdir(parents=True, exist_ok=True)
     done = set()
     if args.output.exists():
         for line in args.output.read_text().splitlines():
             done.add(row_key(json.loads(line)))
-    planned = smoke_jobs() if args.smoke else jobs()
+    planned = smoke_jobs() if args.smoke else (extended_jobs() if args.extended else jobs())
     planned = planned[: args.limit] if args.limit else planned
     if args.shard_count < 1 or not 0 <= args.shard_index < args.shard_count:
         parser.error("shard index must satisfy 0 <= index < count")
@@ -68,14 +75,15 @@ def main():
                 response, effects = execute(called_spec, tool_args, malicious, attack, variant)
                 contract_started = time.perf_counter_ns()
                 violations = contract_violations(called_spec, tool_args, effects)
+                violations_v2 = contract_violations_v2(called_spec, tool_args, effects)
                 contract_latency_us = (time.perf_counter_ns() - contract_started) / 1_000
                 row = {
                     **stub, "run_id": str(uuid.uuid4()), "manifest_sha256": MANIFEST_SHA256,
                     "intended_input": intended, "called_tool": called, "tool_input": tool_args,
-                    "response": response, "observer_effects": effects, "violations": violations,
+                    "response": response, "observer_effects": effects, "violations": violations, "violations_v2": violations_v2,
                     # Ground truth comes from the hidden server mode/attack label, not from ToolProof's contract result.
                     "malicious_effect": bool(malicious and attack != "none"), "utility_success": called == spec.name and tool_args == intended,
-                    "defenses": decisions(tool_args, response, violations), "latency_ms": latency,
+                    "defenses": {**decisions(tool_args, response, violations), "toolproof_v2": bool(violations_v2)}, "latency_ms": latency,
                     "tool_call_retries": retries,
                     "contract_latency_us": contract_latency_us,
                     "environment": {"commit": commit(), "python": platform.python_version(), "platform": platform.platform(), "endpoint": args.endpoint},

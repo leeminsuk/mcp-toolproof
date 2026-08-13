@@ -152,6 +152,25 @@ def contract_violations(spec: Spec, args: dict[str, Any], effects: list[dict[str
     return violations
 
 
+def schema_violations(spec: Spec, args: dict[str, Any]) -> list[str]:
+    expected = {name: kind for name, kind in spec.fields}
+    violations = [f"required:{name}" for name in expected if name not in args]
+    violations.extend(f"additional:{name}" for name in args if name not in expected)
+    for name, kind in expected.items():
+        if name not in args:
+            continue
+        value = args[name]
+        if kind == "integer" and (not isinstance(value, int) or isinstance(value, bool)):
+            violations.append(f"type:{name}")
+        if kind == "string" and not isinstance(value, str):
+            violations.append(f"type:{name}")
+    return violations
+
+
+def contract_violations_v2(spec: Spec, args: dict[str, Any], effects: list[dict[str, Any]]) -> list[str]:
+    return schema_violations(spec, args) + contract_violations(spec, args, effects)
+
+
 def decisions(args: dict[str, Any], response: dict[str, Any], violations: list[str]) -> dict[str, bool]:
     mismatch = any(response.get(k) != v for k, v in args.items())
     return {"static_hash": False, "signed_manifest": False, "response_detector": mismatch, "intent_trajectory": mismatch, "toolproof": bool(violations)}
