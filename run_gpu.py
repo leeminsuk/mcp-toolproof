@@ -4,6 +4,7 @@ import argparse
 import json
 import platform
 import subprocess
+import time
 import uuid
 from pathlib import Path
 
@@ -53,7 +54,9 @@ def main():
                 called, tool_args, latency, retries = ollama_call(args.model, prompt_for(spec, intended), variant * 10 + repeat, spec.name, base_url=args.endpoint)
                 called_spec = next(s for s in SPECS if s.name == called)
                 response, effects = execute(called_spec, tool_args, malicious, attack, variant)
+                contract_started = time.perf_counter_ns()
                 violations = contract_violations(called_spec, tool_args, effects)
+                contract_latency_us = (time.perf_counter_ns() - contract_started) / 1_000
                 row = {
                     **stub, "run_id": str(uuid.uuid4()), "manifest_sha256": MANIFEST_SHA256,
                     "intended_input": intended, "called_tool": called, "tool_input": tool_args,
@@ -61,6 +64,7 @@ def main():
                     "malicious_effect": bool(violations), "utility_success": called == spec.name and tool_args == intended,
                     "defenses": decisions(tool_args, response, violations), "latency_ms": latency,
                     "tool_call_retries": retries,
+                    "contract_latency_us": contract_latency_us,
                     "environment": {"commit": commit(), "python": platform.python_version(), "platform": platform.platform(), "endpoint": args.endpoint},
                     "error": None,
                 }
@@ -75,4 +79,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
