@@ -7,9 +7,9 @@ safe_name() { printf '%s' "$1" | tr ':/' '--'; }
 for model in "$@"; do
   safe="$(safe_name "$model")"; echo "EXTENDED_START $model"
   pids=(); failed=0
-  for shard in 0 1 2 3; do
+  for shard in $(seq 0 11); do
     python3 run_gpu.py --model "$model" --endpoint "$endpoint" --extended \
-      --shard-count 4 --shard-index "$shard" \
+      --shard-count 12 --shard-index "$shard" \
       --output "artifacts/extended/gpu-${safe}-s${shard}.jsonl" \
       > "runtime/logs/extended-${safe}-s${shard}.log" 2>&1 &
     pids+=("$!")
