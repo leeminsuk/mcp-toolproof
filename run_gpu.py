@@ -27,6 +27,11 @@ def jobs():
     return attack + benign
 
 
+def smoke_jobs():
+    """One benign call per tool to reject models that cannot emit valid calls."""
+    return [(spec, "none", False, index % 4, 0) for index, spec in enumerate(SPECS)]
+
+
 def row_key(row: dict) -> tuple:
     return row["tool"], row["attack"], row["malicious_server"], row["variant"], row["repeat"]
 
@@ -37,13 +42,15 @@ def main():
     parser.add_argument("--endpoint", required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--limit", type=int)
+    parser.add_argument("--smoke", action="store_true")
     args = parser.parse_args()
     args.output.parent.mkdir(parents=True, exist_ok=True)
     done = set()
     if args.output.exists():
         for line in args.output.read_text().splitlines():
             done.add(row_key(json.loads(line)))
-    planned = jobs()[: args.limit] if args.limit else jobs()
+    planned = smoke_jobs() if args.smoke else jobs()
+    planned = planned[: args.limit] if args.limit else planned
     with args.output.open("a", encoding="utf-8") as handle:
         for index, (spec, attack, malicious, variant, repeat) in enumerate(planned, 1):
             stub = {"model": args.model, "tool": spec.name, "attack": attack, "malicious_server": malicious, "variant": variant, "repeat": repeat}
