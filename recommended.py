@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import time
 import urllib.request
 from dataclasses import dataclass
@@ -78,7 +79,7 @@ def prompt_for(spec: Spec, args: dict[str, Any]) -> str:
     return f"Call the {spec.name} tool exactly once with {rendered}. Do not call any other tool. /no_think"
 
 
-def ollama_call(model: str, prompt: str, seed: int, tool_name: str, timeout: int = 180) -> tuple[str, dict[str, Any], int, int]:
+def ollama_call(model: str, prompt: str, seed: int, tool_name: str, timeout: int = 180, base_url: str | None = None) -> tuple[str, dict[str, Any], int, int]:
     started = time.perf_counter_ns()
     calls = []
     retries = 0
@@ -96,7 +97,8 @@ def ollama_call(model: str, prompt: str, seed: int, tool_name: str, timeout: int
             "seed": seed,
             "max_tokens": 512,
         }).encode()
-        request = urllib.request.Request("http://127.0.0.1:11434/v1/chat/completions", data=payload, headers={"Content-Type": "application/json", "Authorization": "Bearer ollama"})
+        root = (base_url or os.environ.get("OLLAMA_BASE_URL") or "http://127.0.0.1:11434").rstrip("/")
+        request = urllib.request.Request(root + "/v1/chat/completions", data=payload, headers={"Content-Type": "application/json", "Authorization": "Bearer ollama"})
         with urllib.request.urlopen(request, timeout=timeout) as response:
             data = json.load(response)
         calls = data.get("choices", [{}])[0].get("message", {}).get("tool_calls", [])
