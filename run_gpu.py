@@ -52,6 +52,8 @@ def main():
     parser.add_argument("--shard-count", type=int, default=1)
     parser.add_argument("--shard-index", type=int, default=0)
     parser.add_argument("--extended", action="store_true")
+    parser.add_argument("--retry-errors-from", nargs="+", type=Path,
+                        help="Restrict the planned corpus to keys that failed in these immutable source files.")
     args = parser.parse_args()
     args.output.parent.mkdir(parents=True, exist_ok=True)
     done = set()
@@ -59,6 +61,17 @@ def main():
         for line in args.output.read_text().splitlines():
             done.add(row_key(json.loads(line)))
     planned = smoke_jobs() if args.smoke else (extended_jobs() if args.extended else jobs())
+    if args.retry_errors_from:
+        failed = set()
+        for source in args.retry_errors_from:
+            for line in source.read_text(encoding="utf-8").splitlines():
+                row = json.loads(line)
+                if row.get("model") == args.model and row.get("error"):
+                    failed.add(row_key(row))
+        planned = [job for job in planned if row_key({
+            "tool": job[0].name, "attack": job[1], "malicious_server": job[2],
+            "variant": job[3], "repeat": job[4],
+        }) in failed]
     planned = planned[: args.limit] if args.limit else planned
     if args.shard_count < 1 or not 0 <= args.shard_index < args.shard_count:
         parser.error("shard index must satisfy 0 <= index < count")
