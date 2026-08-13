@@ -83,6 +83,7 @@ def main():
         by_tool[row["tool"]].append(row)
     report = {
         "overall": summarize(rows),
+        "holdout": summarize([r for r in rows if r.get("attack") in {"hidden_duplication", "cross_channel", "none"}]),
         "by_model": {k: summarize(v) for k, v in sorted(by_model.items())},
         "by_attack": {k: summarize(v) for k, v in sorted(by_attack.items())},
         "by_tool": {k: summarize(v) for k, v in sorted(by_tool.items())},
@@ -95,4 +96,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
