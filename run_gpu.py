@@ -43,6 +43,8 @@ def main():
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--limit", type=int)
     parser.add_argument("--smoke", action="store_true")
+    parser.add_argument("--shard-count", type=int, default=1)
+    parser.add_argument("--shard-index", type=int, default=0)
     args = parser.parse_args()
     args.output.parent.mkdir(parents=True, exist_ok=True)
     done = set()
@@ -51,6 +53,9 @@ def main():
             done.add(row_key(json.loads(line)))
     planned = smoke_jobs() if args.smoke else jobs()
     planned = planned[: args.limit] if args.limit else planned
+    if args.shard_count < 1 or not 0 <= args.shard_index < args.shard_count:
+        parser.error("shard index must satisfy 0 <= index < count")
+    planned = [job for index, job in enumerate(planned) if index % args.shard_count == args.shard_index]
     with args.output.open("a", encoding="utf-8") as handle:
         for index, (spec, attack, malicious, variant, repeat) in enumerate(planned, 1):
             stub = {"model": args.model, "tool": spec.name, "attack": attack, "malicious_server": malicious, "variant": variant, "repeat": repeat}

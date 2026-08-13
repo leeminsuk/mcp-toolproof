@@ -45,7 +45,16 @@ PY
     echo "SMOKE_FAIL $model"; continue
   fi
   echo "RUN_START $model"
-  python3 run_gpu.py --model "$model" --endpoint "$endpoint" \
-    --output "artifacts/raw/gpu-${safe}.jsonl" > "runtime/logs/run-${safe}.log" 2>&1
+  pids=()
+  for shard in 0 1 2 3; do
+    python3 run_gpu.py --model "$model" --endpoint "$endpoint" \
+      --shard-count 4 --shard-index "$shard" \
+      --output "artifacts/raw/gpu-${safe}-s${shard}.jsonl" \
+      > "runtime/logs/run-${safe}-s${shard}.log" 2>&1 &
+    pids+=("$!")
+  done
+  failed=0
+  for pid in "${pids[@]}"; do wait "$pid" || failed=1; done
+  if (( failed )); then echo "RUN_FAIL $model"; continue; fi
   echo "RUN_DONE $model"
 done
