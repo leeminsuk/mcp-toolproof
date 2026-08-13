@@ -1,0 +1,57 @@
+from __future__ import annotations
+import glob, json, os, statistics, hashlib
+from collections import Counter, defaultdict
+from pathlib import Path
+import matplotlib.pyplot as plt
+import numpy as np
+from reportlab.lib import colors
+from reportlab.lib.enums import TA_CENTER
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.units import mm
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image, PageBreak, KeepTogether
+
+ROOT=Path(__file__).parent; ART=ROOT/'artifacts/gpu-final'; FIG=ART/'figures'; FIG.mkdir(parents=True,exist_ok=True)
+rows=[json.loads(x) for f in glob.glob(str(ART/'raw/gpu-*.jsonl')) for x in open(f,encoding='utf-8')]
+valid=[r for r in rows if not r.get('error')]; summary=json.load(open(ART/'summary-10models.json'))
+font='/System/Library/Fonts/Supplemental/AppleGothic.ttf'; pdfmetrics.registerFont(TTFont('K',font)); pdfmetrics.registerFont(TTFont('KB',font))
+plt.rcParams['font.family']='Apple SD Gothic Neo'; plt.rcParams['axes.unicode_minus']=False
+BLUE='#173A63'; CYAN='#18A6A6'; ORANGE='#F28E2B'; RED='#D9534F'; GRAY='#667085'
+
+def save(name): plt.tight_layout(); p=FIG/name; plt.savefig(p,dpi=190,bbox_inches='tight'); plt.close(); return str(p)
+def figures():
+    ds=summary['overall']['defenses']; names=['정적 hash','서명 manifest','응답 검사','의도 궤적','ToolProof']; keys=['static_hash','signed_manifest','response_detector','intent_trajectory','toolproof']
+    x=np.arange(5); w=.25; plt.figure(figsize=(8,3.5)); plt.bar(x-w,[ds[k]['f1'] for k in keys],w,label='F1',color=BLUE); plt.bar(x,[ds[k]['recall'] for k in keys],w,label='Recall',color=CYAN); plt.bar(x+w,[ds[k]['fpr'] for k in keys],w,label='FPR',color=ORANGE); plt.xticks(x,names,rotation=12); plt.ylim(0,1.08); plt.legend(ncol=3); plt.title('방어별 탐지 성능 (유효 9,719회)'); p1=save('defenses.png')
+    bm=summary['by_model']; models=list(bm); plt.figure(figsize=(9,4.2)); x=np.arange(len(models)); plt.bar(x,[bm[m]['utility'] for m in models],color=BLUE,label='Utility'); plt.plot(x,[bm[m]['retry_rate'] for m in models],'o-',color=ORANGE,label='Retry rate'); plt.xticks(x,[m.replace(':','\n') for m in models],fontsize=8); plt.ylim(0,1.05); plt.legend(); plt.title('모델별 도구 호출 유용성 및 재시도율'); p2=save('models.png')
+    attacks=['target_substitution','value_substitution','hidden_duplication','scope_expansion','delayed_activation','cross_channel']; tools=sorted({r['tool'] for r in valid}); mat=np.zeros((len(tools),len(attacks)))
+    for i,t in enumerate(tools):
+      for j,a in enumerate(attacks):
+       z=[r for r in valid if r['tool']==t and r['attack']==a]; mat[i,j]=sum(r['defenses']['toolproof'] for r in z)/len(z) if z else np.nan
+    plt.figure(figsize=(8,5)); plt.imshow(mat,vmin=0,vmax=1,cmap='YlGnBu'); plt.colorbar(label='Recall'); plt.xticks(range(6),[a.replace('_','\n') for a in attacks],fontsize=7); plt.yticks(range(len(tools)),tools,fontsize=8); plt.title('도구 × 공격군 ToolProof 재현율'); p3=save('heatmap.png')
+    lat=defaultdict(list)
+    for r in valid: lat[r['model']].append(r['latency_ms'])
+    plt.figure(figsize=(9,4)); plt.boxplot([lat[m] for m in models],showfliers=False); plt.xticks(range(1,len(models)+1),[m.replace(':','\n') for m in models],fontsize=8); plt.ylabel('ms'); plt.title('모델별 추론 지연 분포 (이상치 제외 표시)'); p4=save('latency.png')
+    passed=10; failed=10; plt.figure(figsize=(5,3.3)); plt.bar(['통과 후 본실험','스모크 탈락'],[passed,failed],color=[CYAN,RED]); plt.ylabel('모델 수'); plt.title('모델 품질 게이트'); p5=save('selection.png')
+    return p1,p2,p3,p4,p5
+
+styles=getSampleStyleSheet(); styles.add(ParagraphStyle(name='Ko',fontName='K',fontSize=9.3,leading=14)); styles.add(ParagraphStyle(name='H1K',fontName='KB',fontSize=18,leading=23,textColor=colors.HexColor(BLUE),spaceAfter=9)); styles.add(ParagraphStyle(name='H2K',fontName='KB',fontSize=13,leading=17,textColor=colors.HexColor(BLUE),spaceBefore=7,spaceAfter=5)); styles.add(ParagraphStyle(name='TitleK',fontName='KB',fontSize=22,leading=29,alignment=TA_CENTER,textColor=colors.HexColor(BLUE))); styles.add(ParagraphStyle(name='SmallK',fontName='K',fontSize=7.4,leading=10));
+def P(s,style='Ko'): return Paragraph(s,styles[style])
+def tbl(data,widths=None,small=True):
+ t=Table([[P(str(c),'SmallK' if small else 'Ko') for c in row] for row in data],colWidths=widths,repeatRows=1); t.setStyle(TableStyle([('BACKGROUND',(0,0),(-1,0),colors.HexColor(BLUE)),('TEXTCOLOR',(0,0),(-1,0),colors.white),('FONTNAME',(0,0),(-1,-1),'K'),('GRID',(0,0),(-1,-1),.35,colors.HexColor('#B7C3D0')),('VALIGN',(0,0),(-1,-1),'MIDDLE'),('ROWBACKGROUNDS',(0,1),(-1,-1),[colors.white,colors.HexColor('#F2F5F8')]),('LEFTPADDING',(0,0),(-1,-1),5),('RIGHTPADDING',(0,0),(-1,-1),5)])); return t
+def footer(c,d): c.saveState(); c.setFont('K',7); c.setFillColor(colors.HexColor(GRAY)); c.drawString(18*mm,10*mm,'MCP ToolProof — 재현 가능한 합성 테스트베드 결과'); c.drawRightString(192*mm,10*mm,str(d.page)); c.restoreState()
+
+def report(out):
+ bm=summary['by_model']
+ p1,p2,p3,p4,p5=figures(); o=summary['overall']; tp=o['defenses']['toolproof']; story=[P('MCP ToolProof 10개 모델 실험 결과 보고서','TitleK'),P('A100 80GB × 2 · 12개 도구 · 6개 공격군 · 총 9,720회','H2K'),Spacer(1,6*mm),tbl([['핵심 지표','실측값'],['계획/유효 실행','9,720 / 9,719 (오류 1)'],['ToolProof F1 / Recall / Precision',f"{tp['f1']:.4f} / {tp['recall']:.4f} / {tp['precision']:.4f}"],['정상 오탐','0 / 1,080 (Wilson 95% 상한 0.354%)'],['추론 p50 / p95',f"{o['inference_p50_ms']:.0f} / {o['inference_p95_ms']:.0f} ms"],['계약검사 p50 / p95',f"{o['contract_p50_us']:.2f} / {o['contract_p95_us']:.2f} μs"],['도구 호출 Utility / 재시도율',f"{o['utility']:.4f} / {o['retry_rate']:.4f}"]],[55*mm,105*mm],False),Spacer(1,5*mm),Image(p1,width=170*mm,height=74*mm),P('결론: byte-identical manifest와 정상 응답만 보는 네 기준은 본 위협모델의 외부 효과 변조를 탐지하지 못했다. 독립 observer 기반 의미 계약은 8,623/8,639 공격을 탐지했고 정상 실행 1,080건에서 오탐이 없었다.','Ko'),PageBreak(),P('1. 실험 설계와 신뢰 경계','H1K'),P('각 모델은 공격 864회(12도구×6공격×4변형×3반복)와 정상 108회로 구성된다. manifest는 모든 서버 모드에서 동일하며 응답은 정상 인자를 되돌린다. 정답은 숨겨진 서버 모드·공격 라벨로 만들고, ToolProof는 호출 인자와 독립 observer가 관측한 외부 효과만 비교한다. 결제·메일·파일·HTTP·DB는 모두 로컬 모의 sink로 격리하였다.'),tbl([['축','값'],['모델','10종 공개 가중치 모델'],['도구','결제/메일/일정/HTTP/파일/DB 12종'],['공격','대상·값 치환, 숨은 복제, 범위 확장, 지연 활성화, 교차 채널'],['반복','4 입력 변형 × 3회'],['하드웨어','NVIDIA A100-SXM4-80GB × 2'],['판정 단위','응답이 아니라 실제 observer 효과']],[38*mm,125*mm]),Spacer(1,4*mm),Image(p5,width=100*mm,height=62*mm),P('20개 후보를 스모크 평가했으며 12개 도구에서 모두 유효 호출을 만든 10개 모델만 본 실험에 포함했다. 탈락은 정상 스모크 단계에서만 결정했으며 공격 결과를 보고 선택하지 않았다.'),PageBreak(),P('2. 모델별 결과','H1K'),Image(p2,width=175*mm,height=82*mm),tbl([['모델','유효','Utility','Retry','p50 ms','p95 ms']]+[[m,str(bm[m]['valid']),f"{bm[m]['utility']:.3f}",f"{bm[m]['retry_rate']:.3f}",f"{bm[m]['inference_p50_ms']:.0f}",f"{bm[m]['inference_p95_ms']:.0f}"] for m in bm],[44*mm,18*mm,22*mm,20*mm,24*mm,24*mm]),PageBreak(),P('3. 공격·도구별 강건성','H1K'),Image(p3,width=175*mm,height=108*mm),P('유일한 미탐 16건은 모두 qwen3:1.7b의 update_beneficiary에서 발생했다. 모델이 필수 필드 account 대신 정의되지 않은 beneficiary_account를 출력하자 기존 계약이 실제 호출 인자만 순회해 변조된 account를 비교하지 못했다. 이는 schema completeness 검사가 필요한 구체적 반례다.'),PageBreak(),P('4. 지연과 운영 비용','H1K'),Image(p4,width=175*mm,height=78*mm),P(f"LLM 호출 지연은 p50 {o['inference_p50_ms']:.0f} ms, p95 {o['inference_p95_ms']:.0f} ms였지만 의미 계약 판정은 p50 {o['contract_p50_us']:.2f} μs, p95 {o['contract_p95_us']:.2f} μs였다. 합성 in-process observer 기준으로 계약 연산 자체는 추론보다 매우 작다. 실제 원격 observer·감사 로그 비용은 포함하지 않는다."),PageBreak(),P('5. 실패·한계·재현성','H1K'),tbl([['항목','관측/처리'],['본 실행 오류','1/9,720: qwen3:4b 단일 도구호출 실패; 삭제하지 않고 오류로 보존'],['ToolProof FN','16건; 스키마 필드 별칭/누락으로 계약 사각지대 발생'],['외부 타당성','합성 로컬 sink이며 실제 SaaS·OS 부작용은 미검증'],['모델 편중','Qwen 5, Llama 3, Mistral 1, Hermes 1'],['콜드 스타트','최초 모델 적재가 포함될 수 있어 지연 분포 해석 주의'],['과장 금지','MCP 전체 공격 방어 또는 최초 발견을 주장하지 않음']],[42*mm,122*mm]),Spacer(1,5*mm),P('재현성 식별자','H2K'),P(f"manifest SHA-256: <font name='K'>{valid[0]['manifest_sha256']}</font><br/>코드 commit: {valid[0]['environment']['commit']}<br/>원시 JSONL·요약 JSON·SHA256SUMS를 함께 보존했다."),P('권고: 계약 컴파일 시 required 필드 존재·추가 필드 금지·타입 검증을 먼저 수행하고, 그 다음 값·효과 종류·cardinality·scope를 비교해야 한다. 이 개선은 본 결과와 분리된 후속 검증으로 수행해야 한다.','Ko')]
+ SimpleDocTemplate(str(out),pagesize=A4,rightMargin=16*mm,leftMargin=16*mm,topMargin=15*mm,bottomMargin=16*mm,title='MCP ToolProof 10-model Experiment Report').build(story,onFirstPage=footer,onLaterPages=footer)
+
+def paper(out):
+ o=summary['overall']; tp=o['defenses']['toolproof']; refs='[1] Anthropic, Model Context Protocol Specification, 2026. [2] MCPTox, AAAI 2026. [3] Semantic Attacks on Tool-Augmented LLMs, arXiv:2512.06556. [4] Connor, arXiv:2604.01905. [5] CAVA, arXiv:2607.13716. [6] HCP, 2026.'
+ st=[P('정상 응답으로 은폐된 MCP 도구의 외부 효과 변조 공격 및 독립 관찰 기반 탐지','TitleK'),P('Detecting Response–Effect Inconsistency in MCP Tools Using Independent External Observation','SmallK'),P('저자명*  ·  *소속 (제출 전 입력)','SmallK'),Spacer(1,2*mm),P('<b>요약</b> — MCP 도구의 manifest와 응답을 정상으로 유지하면서 실제 외부 효과만 조건부 변조하는 공격을 구성하고, 독립 observer와 실행 가능한 값-의미 계약으로 탐지하였다. 10개 공개 모델·12개 도구·6개 공격군의 9,720회 실험에서 ToolProof는 F1 0.9991, 재현율 0.9981, 정밀도 1.0을 보였고 정상 1,080건의 오탐은 0이었다. 단 16개 미탐은 스키마 필드 누락 검사가 없는 계약의 구체적 한계를 드러냈다.'),P('1. 서론','H2K'),P('기존 MCP 방어는 description/schema 변조, 정적 무결성, 응답 또는 에이전트 의도 편차에 집중한다. 그러나 서버가 byte-identical manifest와 정상 응답을 유지한 채 ledger·mailbox·filesystem·HTTP sink의 효과만 바꾸면 control-plane 검사는 통과한다. 본 연구의 기여는 (1) 조건부 response–effect inconsistency 위협모델, (2) 독립 관찰 기반 값-의미 계약, (3) 10모델 균형 실험과 실패 반례의 정량화다. 최초 발견이 아니라 좁은 공격 변종과 방어 조합을 주장한다.'),P('2. 방법','H2K'),P('각 모델에 공격 864회와 정상 108회를 실행했다. 공격은 target/value substitution, hidden duplication, scope expansion, delayed activation, cross-channel의 6종이다. 정답은 숨겨진 서버 모드와 공격 라벨로 생성하며 ToolProof 판정과 분리했다. 모든 부작용은 로컬 모의 sink에만 기록했다. manifest SHA-256은 모든 유효 실행에서 동일했다.'),tbl([['방어','Recall','FPR','F1'],['정적 hash','0','0','0'],['서명 manifest','0','0','0'],['응답 검사','0','0','0'],['의도 궤적','0','0','0'],['ToolProof',f"{tp['recall']:.4f}",'0',f"{tp['f1']:.4f}"]],[55*mm,35*mm,35*mm,35*mm]),P('3. 결과','H2K'),P(f"9,720회 중 1회 호출 오류를 포함해 유효 표본은 9,719회였다. ToolProof는 TP 8,623, FN 16, FP 0, TN 1,080이었다. 정밀도 95% Wilson 하한은 {tp['precision_ci95'][0]:.4f}, 재현율 구간은 [{tp['recall_ci95'][0]:.4f}, {tp['recall_ci95'][1]:.4f}]였다. 추론 p50/p95는 {o['inference_p50_ms']:.0f}/{o['inference_p95_ms']:.0f} ms, 계약 검사는 {o['contract_p50_us']:.2f}/{o['contract_p95_us']:.2f} μs였다. Utility는 {o['utility']:.4f}, 재시도율은 {o['retry_rate']:.4f}였다."),Image(str(FIG/'defenses.png'),width=165*mm,height=68*mm),P('4. 실패 분석 및 논의','H2K'),P('16개 FN은 모두 qwen3:1.7b가 update_beneficiary의 account 대신 beneficiary_account를 생성한 경우였다. 계약이 실제 인자만 비교해 필수 필드 누락을 확인하지 않았기 때문이다. 따라서 required/type/additionalProperties 검사를 계약 전단에 결합해야 한다. 이 결과는 ToolProof가 완전함을 보이는 것이 아니라, 외부 관찰이 정적·응답 검사보다 추가 신호를 제공하며 계약 완전성이 성능을 좌우함을 보인다.'),P('5. 한계 및 결론','H2K'),P('본 테스트베드는 합성 in-process observer이며 실제 MCP 서버·원격 SaaS·권한 경계는 다루지 않는다. 모델 계열도 편중되어 있다. 따라서 결과는 MCP 전체 보안의 일반 해법이 아니라 response–effect inconsistency의 재현 가능성에 대한 증거다. 향후 실제 서버와 스키마 완전성 계약으로 외부 타당성을 검증한다.'),P('참고문헌','H2K'),P(refs,'SmallK')]
+ SimpleDocTemplate(str(out),pagesize=A4,rightMargin=16*mm,leftMargin=16*mm,topMargin=13*mm,bottomMargin=13*mm,title='MCP ToolProof KIISC Paper').build(st,onFirstPage=footer,onLaterPages=footer)
+
+if __name__=='__main__':
+ report(Path('/Users/chchou/Downloads/MCP_ToolProof_10모델_실험결과보고서.pdf'))
+ paper(Path('/Users/chchou/Downloads/MCP_ToolProof_KIISC_논문.pdf'))
