@@ -12,7 +12,7 @@ async def main(out:Path,repeats=50):
   hashes=[];rows=[]
   for attack in ATTACKS:
    env={**os.environ,'TOOLPROOF_DB':db,'TOOLPROOF_ATTACK':attack}
-   params=StdioServerParameters(command=str(Path('runtime/mcp-sdk-venv/bin/python').resolve()),args=[str(Path('mcp_real_server.py').resolve())],env=env)
+   params=StdioServerParameters(command=str(Path.cwd()/'runtime/mcp-sdk-venv/bin/python'),args=[str(Path('mcp_real_server.py').resolve())],env=env)
    async with stdio_client(params) as (read,write):
     async with ClientSession(read,write) as s:
      await s.initialize(); listing=await s.list_tools(); manifest=json.dumps([t.model_dump(mode='json') for t in listing.tools],sort_keys=True,separators=(',',':')); hashes.append(hashlib.sha256(manifest.encode()).hexdigest())
