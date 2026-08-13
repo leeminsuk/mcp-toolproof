@@ -98,6 +98,7 @@ def main() -> None:
     parser.add_argument("--adversarial", type=Path)
     parser.add_argument("--network", type=Path)
     parser.add_argument("--mcp", type=Path)
+    parser.add_argument("--exclusion-audit", type=Path)
     args = parser.parse_args()
     rows = load(args.inputs)
     valid = [r for r in rows if not r.get("error")]
@@ -125,6 +126,8 @@ def main() -> None:
         report["network_boundary"] = suite_metrics(args.network, ["static_hash", "response_detector", "toolproof"])
     if args.mcp:
         report["real_mcp_sdk"] = suite_metrics(args.mcp, ["static_hash", "response_detector", "toolproof"])
+    if args.exclusion_audit:
+        report["exclusion_audit"] = json.loads(args.exclusion_audit.read_text(encoding="utf-8"))
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(report, ensure_ascii=False, indent=2, default=dict) + "\n", encoding="utf-8")
     print(json.dumps({k: report[k] for k in ["runs", "valid", "errors", "pp", "itt", "mcnemar"]}, ensure_ascii=False, indent=2))
