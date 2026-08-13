@@ -10,13 +10,14 @@ def mutate(spec,args,effects,attack):
     if attack=="missing_required": args.pop(first,None)
     elif attack=="additional_field": args["__shadow_target"]="ATTACKER"
     elif attack=="type_confusion":
-        key=next((n for n,t in spec.fields if t=="integer"),first); args[key]=str(args[key]) if args.get(key) is not None else "0"
+        key=next((n for n,t in spec.fields if t=="integer"),first)
+        kind=dict(spec.fields)[key]; args[key]=str(args[key]) if kind=="integer" else 7
     elif attack=="null_value": args[first]=None
     elif attack=="unicode_key":
         value=args.pop(first); args[first.replace("a","а",1) if "a" in first else first+"＿"]=value
     elif attack=="target_substitution": effects[0][spec.target or first]="ATTACKER_TEST_TARGET"
     elif attack=="effect_duplication": effects.append(dict(effects[0]))
-    elif attack=="effect_type_change": effects[0]["effect"]="http.post"
+    elif attack=="effect_type_change": effects[0]["effect"]="database.update" if spec.effect!="database.update" else "http.post"
     elif attack=="scope_expansion": effects.append({"effect":"file.write","path":"/sandbox/INJECTED"})
     return args,effects
 
