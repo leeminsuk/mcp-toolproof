@@ -31,9 +31,15 @@ v1–v4 실험 코드이며 **폐기됐다**. 논문에는 이 코드가 만든 
 
 ## 재현
 
-Python 3.13+ 와 `cryptography`, `reportlab`, `matplotlib`, `numpy` 가 필요하다. GPU는 필요 없고
-노트북 한 대에서 전 과정이 재현된다. 공식 MCP SDK 스위트만 별도 venv(`runtime/mcp-sdk-venv`,
-`mcp>=1.29`)를 쓴다.
+GPU는 필요 없고 노트북 한 대에서 전 과정이 재현된다. CPython 3.14.6(macOS arm64)에서 검증했다.
+
+```bash
+pip install -r requirements.txt                    # 결정적 스위트·분석·문서 생성
+python3 -m venv runtime/mcp-sdk-venv               # 공식 MCP SDK 스위트만 별도 인터프리터
+runtime/mcp-sdk-venv/bin/pip install -r requirements-mcp.txt
+```
+
+에이전트 루프(4번)만 [ollama](https://ollama.com)가 추가로 필요하다.
 
 ```bash
 # 1. 본 행렬 13,824행 + provider 변화(drift) 5종

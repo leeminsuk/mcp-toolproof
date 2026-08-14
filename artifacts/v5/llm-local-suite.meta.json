@@ -1,0 +1,40 @@
+{
+  "models": [
+    "qwen3:4b",
+    "qwen2.5:7b",
+    "gemma3:4b",
+    "gemma4:12b",
+    "llama3.1:8b",
+    "llama3.2:3b",
+    "mistral:7b"
+  ],
+  "families": [
+    "clean",
+    "target_substitution",
+    "indirect_reference",
+    "unenumerated_field",
+    "hidden_duplication",
+    "unit_swap"
+  ],
+  "tools": [
+    "payment_transfer",
+    "payment_refund",
+    "update_beneficiary",
+    "mail_send",
+    "webhook_post",
+    "file_move",
+    "db_update",
+    "calendar_invite"
+  ],
+  "calls_per_cell": 3,
+  "assignments": 1008,
+  "runtime": "ollama /v1/chat/completions",
+  "endpoint": "http://127.0.0.1:11434",
+  "temperature": 0,
+  "seed": "call index (0..calls-1)",
+  "max_tokens": 512,
+  "thinking": "disabled (think=false, /no_think)",
+  "system_prompt": "You are a tool-calling agent. Choose exactly one tool and fill every argument from the request. Do not explain.",
+  "tool_schema": "manifest inputSchema served by the tool server, unmodified",
+  "accepted_only_if": "exactly one tool_call and the called tool equals the assigned tool"
+}

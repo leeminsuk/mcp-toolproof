@@ -1,0 +1,7 @@
+# Deterministic suites, analysis and document generation.
+#   v5/run_suites.sh, v5/holdout.py, v5/analyze.py, v5/make_paper.py, v5/make_report.py
+# Verified on CPython 3.14.6 (macOS arm64).  GPU is not used anywhere.
+cryptography==48.0.0
+reportlab==4.5.1
+matplotlib==3.10.9
+numpy==2.4.5

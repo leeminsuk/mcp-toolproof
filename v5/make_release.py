@@ -68,6 +68,9 @@ def main() -> None:
                         "rows": lines, "sha256": digest(path)})
     code = [{"file": f"v5/{name}", "sha256": digest(ROOT / "v5" / name)}
             for name in CODE if (ROOT / "v5" / name).exists()]
+    code += [{"file": name, "sha256": digest(ROOT / name)}
+             for name in ("requirements.txt", "requirements-mcp.txt", "tests/test_v5.py")
+             if (ROOT / name).exists()]
     release = {
         "repository": REPO_URL,
         "commit": git("rev-parse", "HEAD"),

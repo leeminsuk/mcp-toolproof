@@ -662,8 +662,9 @@ def build_story(a: dict, st: dict, figures: dict, width: float) -> list:
             f"temperature 0, seed=호출 index, max_tokens {cfg.get('max_tokens', 512)}, thinking 비활성으로 돌렸고, "
             f"도구 schema는 서버가 준 manifest를 그대로 넘겼으며, 도구 호출이 정확히 하나이고 배정된 도구와 같을 "
             f"때만 유효로 셌다. 모델별 표본은 각 {llm['rows'] // max(1, len(llm['models']))}회다. "
-            f"{len(llm['availability']) - len(live)}종은 이 경로에서 도구 호출을 한 번도 만들지 못했고, 호출을 만든 "
-            f"{len(live)}종 사이에서도 생성률이 {pct(min(live.values()), 3)}–{num(max(live.values()), '으로로')} 갈렸다. "
+            + (f"{len(llm['availability']) - len(live)}종은 이 경로에서 도구 호출을 한 번도 만들지 못했고, 호출을 만든 "
+               f"{len(live)}종 사이에서도 " if len(live) < len(llm['availability']) else "모델 사이에서 ")
+            + f"생성률이 {pct(min(live.values()), 3)}–{num(max(live.values()), '으로로')} 갈렸다. "
             f"방어가 적용될 수 있는 범위 자체가 모델 능력에 달려 있다. 확실한 관찰은 하나 더 있다. 서버가 정상인데 "
             f"모델만 이탈한 {dev['rows']}건 가운데 승인 의도 앵커가 잡은 것은 {dev['intent_flags']}건뿐이고, 나머지는 "
             f"두 계약이 모두 열거하지 않은 필드에서 일어났다. 앵커는 무엇과 비교할지를 정하지만, 무엇을 볼 수 "

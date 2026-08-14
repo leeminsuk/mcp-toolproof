@@ -1,0 +1,8 @@
+# Official MCP SDK suite only (v5/real_mcp.py, v5/mcp_server.py,
+# capture_official_schemas.py).  Kept in its own interpreter because the SDK
+# pins transitive versions the analysis stack does not need:
+#   python3 -m venv runtime/mcp-sdk-venv
+#   runtime/mcp-sdk-venv/bin/pip install -r requirements-mcp.txt
+mcp==1.29.0
+anyio==4.14.2
+cryptography==50.0.0

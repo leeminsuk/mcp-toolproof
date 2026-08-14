@@ -1,0 +1,175 @@
+{
+  "repository": "https://github.com/leeminsuk/mcp-toolproof",
+  "commit": "55c5dba4ed142482685087a1cdd45234a0d16a3b",
+  "commit_short": "55c5dba",
+  "dirty": true,
+  "python": "Python 3.14.6",
+  "commands": [
+    "v5/run_suites.sh                                    # 13,824행 본 행렬 + drift 5종",
+    "python3 v5/holdout.py --seeds 3 --calls 12          # 공개 스키마 hold-out",
+    "runtime/mcp-sdk-venv/bin/python v5/real_mcp.py --repeats 12   # 공식 MCP SDK",
+    "python3 v5/llm_layer.py --models qwen3:4b qwen2.5:7b gemma3:4b gemma4:12b --calls 3",
+    "python3 v5/analyze.py --main artifacts/v5/main-suite.jsonl \\",
+    "    --llm-local artifacts/v5/llm-local-suite.jsonl --drift artifacts/v5/drift-*.jsonl \\",
+    "    --real-mcp artifacts/v5/real-mcp-sdk-suite.jsonl \\",
+    "    --holdout artifacts/v5/holdout-suite.jsonl --out artifacts/v5/analysis.json",
+    "python3 -m pytest tests/test_v5.py                  # 회귀 테스트",
+    "python3 v5/make_paper.py && python3 v5/make_report.py"
+  ],
+  "artifacts": [
+    {
+      "file": "artifacts/v5/main-suite.jsonl",
+      "bytes": 20058529,
+      "rows": 13824,
+      "sha256": "8e6797bb40311f2d9c4409481747d184c3a32db9602726f67864e300733e2dde"
+    },
+    {
+      "file": "artifacts/v5/holdout-suite.jsonl",
+      "bytes": 53067377,
+      "rows": 44928,
+      "sha256": "57f56e9c19b3a53a8e625d779dadb7d47a1c512a0590a1b26b465154ce6ffc89"
+    },
+    {
+      "file": "artifacts/v5/real-mcp-sdk-suite.jsonl",
+      "bytes": 1464177,
+      "rows": 2304,
+      "sha256": "24d346758fcf7565ce81dd12ddc0525fdb159052f7aedb46e3f05292b440f6ca"
+    },
+    {
+      "file": "artifacts/v5/llm-local-suite.jsonl",
+      "bytes": 1391,
+      "rows": 5,
+      "sha256": "52f776ed87d6173e1c48a980a42324b58ab018b3615a3e8ba4cbee2de7abaf1d"
+    },
+    {
+      "file": "artifacts/v5/drift-none.jsonl",
+      "bytes": 1626368,
+      "rows": 1152,
+      "sha256": "5d5feeafaa5934e11e73cb3518ed76f47ca5cc5af1fdd008fc4dc9c2cfd659a0"
+    },
+    {
+      "file": "artifacts/v5/drift-receipt_annotation.jsonl",
+      "bytes": 1780459,
+      "rows": 1152,
+      "sha256": "46e7fefc87cff33fcfd6c1ba00fedf738d496c8b35fd857d7401d412056ff492"
+    },
+    {
+      "file": "artifacts/v5/drift-normalisation_upgrade.jsonl",
+      "bytes": 1768664,
+      "rows": 1152,
+      "sha256": "cec0e550c7640602cc307670e3da519b677b2e1349f9b08b7042dd6de2cfc1eb"
+    },
+    {
+      "file": "artifacts/v5/drift-unicode_nfc.jsonl",
+      "bytes": 1634394,
+      "rows": 1152,
+      "sha256": "1399a2c3dafa4ddfd4785c566c944de8294eabe46fcc1ad31a9b5b8a0f714d5f"
+    },
+    {
+      "file": "artifacts/v5/drift-hash_basis_change.jsonl",
+      "bytes": 1646781,
+      "rows": 1152,
+      "sha256": "855b442d2b57d53a0fa6c2cb4fb32f99606b63f496897e7b6919adbc4d92b54a"
+    },
+    {
+      "file": "artifacts/v5/analysis.json",
+      "bytes": 64236,
+      "rows": null,
+      "sha256": "2f89542208c38cc5c0bd3f751e59ce7a4b156d083934fdaf912013f8fb84ec6b"
+    },
+    {
+      "file": "artifacts/v5/freeze.json",
+      "bytes": 674,
+      "rows": null,
+      "sha256": "431205edf45b39c0a68d898b5f06bb12aa951c59af71a5a66548e6f311d88cbe"
+    },
+    {
+      "file": "artifacts/v5/holdout-suite-freeze.json",
+      "bytes": 751,
+      "rows": null,
+      "sha256": "7a77cf39f8d9b83349333ace5f30eba133c8445857dbaf15e9185a8103a079cf"
+    },
+    {
+      "file": "artifacts/v5/holdout-tooltable.json",
+      "bytes": 12022,
+      "rows": null,
+      "sha256": "3c63ba9504df0a4ce6501cd55ffc7041f04d2fa66f30a48f0779cc4cdfbb79c2"
+    },
+    {
+      "file": "artifacts/v5/holdout-suite.jsonl.meta.json",
+      "bytes": 1836,
+      "rows": null,
+      "sha256": "00c2efe2aff8384ec4a608a653e524f02ce7686fa9e3fe3fb920f15d74be7059"
+    },
+    {
+      "file": "artifacts/v5/real-mcp-sdk-suite.jsonl.meta.json",
+      "bytes": 1212,
+      "rows": null,
+      "sha256": "779ebcc328ef60f37de22b5185b99940893ec9dbe3b5f01d07ce8947fd5ced66"
+    },
+    {
+      "file": "artifacts/v5/llm-local-suite.meta.json",
+      "bytes": 1048,
+      "rows": null,
+      "sha256": "f4aae77bfa66d314fc5c2fa7e2867a09c3ce3ba77a38657584f7f29010850499"
+    }
+  ],
+  "code": [
+    {
+      "file": "v5/toolspec.py",
+      "sha256": "59739472b08f52437bc324ddf9dc9d6d3709dd1cec112362f065142118900f35"
+    },
+    {
+      "file": "v5/provider.py",
+      "sha256": "7e42e333226698fceb28a93486a9f110081dd4175090cc3509735100345bea78"
+    },
+    {
+      "file": "v5/toolsrv.py",
+      "sha256": "6baed319a1edf0bea46bc59eabd6ed4964ae5fac566eaa76c8af8cf0b7b646a5"
+    },
+    {
+      "file": "v5/oracle.py",
+      "sha256": "7e7749c8e076909920a52315765d72af7c2ad5f69b3a6cad22a4af72b90ecf71"
+    },
+    {
+      "file": "v5/detectors.py",
+      "sha256": "155516725f07242dfb0d5e277d2b1105a8c06cb67c07fe0e774a68324391c6b2"
+    },
+    {
+      "file": "v5/harness.py",
+      "sha256": "15eafcfa7b91ffe5b19a6429fd8b7f4063769a696a2bba384377a157e326f4fe"
+    },
+    {
+      "file": "v5/holdout.py",
+      "sha256": "829ff1622a0a39935660d12e1892bd50240c2def16fc266b40c31bf0bd0e753c"
+    },
+    {
+      "file": "v5/mcp_server.py",
+      "sha256": "380fb35f0c37228b042ca5ca31e5308fcf44bd284b14bd78933296ada31520e2"
+    },
+    {
+      "file": "v5/real_mcp.py",
+      "sha256": "0c7e41082caf7f13f599c25ea9f3f6c3c23245765c93570619ab0d30fa09e50d"
+    },
+    {
+      "file": "v5/llm_layer.py",
+      "sha256": "8922a69e1f12dcdd67e2a80cc603d11adf2d10b9a1b4cdd2b65daf77dfc3bfce"
+    },
+    {
+      "file": "v5/analyze.py",
+      "sha256": "bce0497c6eaf3ef954f20f27f66575e45564b84ea51c6326f19fc1e57fe3bc1f"
+    },
+    {
+      "file": "v5/make_paper.py",
+      "sha256": "498ff01eebb516f2bbf98448e0a078170db410d2d4c151951b50b40eb0c44269"
+    },
+    {
+      "file": "v5/make_report.py",
+      "sha256": "8a4973ee985aa48084cddaa7b0f7e1c2502f3c05ddbd3a025300345e7d44b35f"
+    },
+    {
+      "file": "v5/make_release.py",
+      "sha256": "c2bcc814dbdd9c60645989cd9fd7b8a2d75d70351273e95c75651d5d5ff5295d"
+    }
+  ]
+}
