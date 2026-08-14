@@ -122,6 +122,7 @@ def run_call(tool: str, family: str, trigger: str, seed: int, call_index: int,
         "extended_toolinput": D.contract_extended(tool, tool_input, bodies),
         "extended_naive": D.contract_extended_naive(tool, approved, bodies),
         "approval_bound": D.contract_approval_bound(tool, approved, bodies),
+        "approval_naive": D.contract_approval_bound_naive(tool, approved, bodies),
     }
     contract_us = (time.perf_counter_ns() - started) / 1_000
     return {

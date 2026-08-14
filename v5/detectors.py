@@ -141,6 +141,21 @@ def contract_approval_bound(tool: str, anchor: dict, receipts: list[dict]) -> li
     return out
 
 
+def contract_approval_bound_naive(tool: str, anchor: dict, receipts: list[dict]) -> list[str]:
+    """Approval binding whose client-side canonicalisation was written
+    independently: it trims strings before hashing, the provider does not."""
+    out = schema_violations(tool, anchor)
+    if not receipts:
+        return out + ["no_effect"]
+    if [r["kind"] for r in receipts] != KIND_SEQUENCE[tool]:
+        out.append("effect_sequence")
+    trimmed = {k: (v.strip() if isinstance(v, str) else v) for k, v in anchor.items()}
+    expected = applied_hash(trimmed)
+    if any(r.get("applied_hash") != expected for r in receipts):
+        out.append("approval_hash")
+    return out
+
+
 def fit_learned(clean_rows: list[dict]) -> dict:
     """Fit a per-tool profile from clean runs only: the modal effect kinds and
     count, plus the argument fields whose value survives into the receipt."""

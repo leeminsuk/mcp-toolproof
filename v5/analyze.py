@@ -15,7 +15,7 @@ from pathlib import Path
 
 DETECTORS = ["manifest_pin", "signed_manifest", "response_detector", "trajectory_lite",
              "learned_relation", "frozen_intent", "extended_intent", "extended_naive",
-             "approval_bound"]
+             "approval_bound", "approval_naive"]
 
 # Families grouped by which contract version enumerates the observation they
 # touch.  The aggregate over all families is a function of this mix, so every
@@ -23,7 +23,8 @@ DETECTORS = ["manifest_pin", "signed_manifest", "response_detector", "trajectory
 GROUP_BOTH = ["target_substitution", "value_scaling", "hidden_duplication",
               "scope_expansion", "cross_channel", "effect_type_change"]
 GROUP_V4_ONLY = ["indirect_reference", "metadata_channel", "ordering_swap", "unit_swap"]
-GROUP_NEITHER = ["unenumerated_field", "tenant_crossing", "memo_exfiltration", "alias_chain"]
+GROUP_NEITHER = ["unenumerated_field", "tenant_crossing", "memo_exfiltration"]
+GROUP_UNSEEN = ["alias_chain", "route_diversion", "ledger_account_swap"]
 GROUP_MIXED = ["fuzz_field"]
 
 
@@ -87,7 +88,8 @@ def main() -> None:
     }
     report["ci95_by_group"] = {}
     for name, members in {"both": GROUP_BOTH, "v4_only": GROUP_V4_ONLY,
-                          "neither": GROUP_NEITHER, "fuzz": GROUP_MIXED}.items():
+                          "neither": GROUP_NEITHER, "unseen": GROUP_UNSEEN,
+                          "fuzz": GROUP_MIXED}.items():
         part = [r for r in independent if r["truth"] and r["family"] in members]
         report["ci95_by_group"][name] = {
             d: cluster_ci(part, d, "recall", samples=1000)
@@ -105,8 +107,8 @@ def main() -> None:
             "fpr": {d: (sum(1 for r in benign if r["detectors"][d]) / len(benign)) if benign else None
                     for d in DETECTORS},
         }
-    groups = {"both": GROUP_BOTH, "v4_only": GROUP_V4_ONLY,
-              "neither": GROUP_NEITHER, "fuzz": GROUP_MIXED}
+    groups = {"both": GROUP_BOTH, "v4_only": GROUP_V4_ONLY, "neither": GROUP_NEITHER,
+              "unseen": GROUP_UNSEEN, "fuzz": GROUP_MIXED}
     report["by_group"] = {}
     for name, members in groups.items():
         attacks = [r for r in independent if r["truth"] and r["family"] in members]

@@ -110,9 +110,14 @@ def build_receipts(request: dict, aliases: dict) -> list[dict]:
     # A forwarding hop exists only on the alias-resolution path.
     final = follow_chain(principal, aliases) if request.get("principal_ref") else principal
     digest = applied_hash(request.get("args", {}))
+    # Two further facts the provider records about how the effect was carried
+    # out.  Neither contract enumerates them.
+    route = request.get("route") or "direct"
+    settlement = request.get("settlement") or principal
     return [
         {"op": op, "kind": kind, "args": args, "resolved_principal": principal,
-         "final_principal": final, "applied_hash": digest, "extra": extra}
+         "final_principal": final, "settlement_route": route,
+         "settlement_account": settlement, "applied_hash": digest, "extra": extra}
         for kind in kinds
         for extra in [request.get("extra") or {}]
     ]
@@ -128,7 +133,7 @@ def faithful_receipts(op: str, approved: dict, submissions: int = 1) -> list[dic
 
 
 RECEIPT_FIELDS = ("op", "kind", "args", "resolved_principal", "final_principal",
-                  "applied_hash", "extra")
+                  "settlement_route", "settlement_account", "applied_hash", "extra")
 
 
 def body_of(receipt: dict) -> dict:

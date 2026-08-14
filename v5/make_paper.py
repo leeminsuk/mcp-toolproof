@@ -42,12 +42,13 @@ DETECTOR_LABEL = {
     "manifest_pin": "manifest pin", "signed_manifest": "서명 manifest",
     "response_detector": "응답 검사", "trajectory_lite": "궤적(종류·개수)",
     "learned_relation": "학습 관계", "frozen_intent": "계약 v3(동결)",
-    "extended_intent": "계약 v4(확장)", "extended_naive": "계약 v4(정규화 미상)",
-    "approval_bound": "승인 결합 영수증",
+    "extended_intent": "계약 v4(확장)", "extended_naive": "v4(정규화 미상)",
+    "approval_bound": "승인 결합", "approval_naive": "승인 결합(직렬화 미상)",
 }
 FAMILY_LABEL = {
     "tenant_crossing": "tenant 침범", "memo_exfiltration": "memo 유출",
-    "alias_chain": "별칭 체인",
+    "alias_chain": "별칭 체인", "route_diversion": "정산 경로 우회",
+    "ledger_account_swap": "정산 계정 교체",
     "target_substitution": "대상 치환", "value_scaling": "금액 변조",
     "hidden_duplication": "숨은 복제", "scope_expansion": "범위 확장",
     "cross_channel": "교차 채널", "effect_type_change": "효과 종류 변경",
@@ -55,14 +56,16 @@ FAMILY_LABEL = {
     "metadata_channel": "메타데이터 채널", "ordering_swap": "순서 교환",
     "unenumerated_field": "비열거 필드", "fuzz_field": "무작위 필드 퍼징",
 }
-GROUP_LABEL = {"both": "직접 인자·효과", "v4_only": "해석·메타데이터",
-               "neither": "비열거 인자", "fuzz": "무작위 인자"}
+GROUP_LABEL = {"both": "A 직접 인자·효과", "v4_only": "B 해석·메타데이터",
+               "neither": "C 비열거 인자", "unseen": "D 미기록 해석 경로",
+               "fuzz": "E 무작위 인자"}
 GROUP_BOTH = ["target_substitution", "value_scaling", "hidden_duplication",
               "scope_expansion", "cross_channel", "effect_type_change"]
 GROUP_V4 = ["indirect_reference", "metadata_channel", "ordering_swap", "unit_swap"]
-GROUP_NEITHER = ["unenumerated_field", "tenant_crossing", "memo_exfiltration", "alias_chain"]
+GROUP_NEITHER = ["unenumerated_field", "tenant_crossing", "memo_exfiltration"]
+GROUP_UNSEEN = ["alias_chain", "route_diversion", "ledger_account_swap"]
 GROUP_FUZZ = ["fuzz_field"]
-ORDER = GROUP_BOTH + GROUP_V4 + GROUP_NEITHER + GROUP_FUZZ
+ORDER = GROUP_BOTH + GROUP_V4 + GROUP_NEITHER + GROUP_UNSEEN + GROUP_FUZZ
 
 
 def styles(scale: float) -> dict:
@@ -105,12 +108,11 @@ def make_heatmap(analysis: dict) -> Path:
     """Families on the vertical axis so the Korean labels stay readable inside
     a single column."""
     FIG.mkdir(parents=True, exist_ok=True)
-    detectors = ["trajectory_lite", "learned_relation", "frozen_intent",
-                 "extended_intent", "approval_bound"]
+    detectors = ["learned_relation", "frozen_intent", "extended_intent", "approval_bound"]
     families = ORDER
     grid = np.array([[analysis["by_family"][f]["recall"][d] or 0.0 for d in detectors]
                      for f in families])
-    fig, ax = plt.subplots(figsize=(3.1, 3.9), dpi=300)
+    fig, ax = plt.subplots(figsize=(3.1, 4.3), dpi=300)
     image = ax.imshow(grid, cmap="RdYlGn", vmin=0, vmax=1, aspect="auto")
     ax.set_xticks(range(len(detectors)))
     ax.set_xticklabels([DETECTOR_LABEL[d] for d in detectors], fontsize=6.2, rotation=34, ha="left")
@@ -121,8 +123,11 @@ def make_heatmap(analysis: dict) -> Path:
     for i in range(grid.shape[0]):
         for j in range(grid.shape[1]):
             ax.text(j, i, f"{grid[i, j]:.2f}", ha="center", va="center", fontsize=6.0, color="#111111")
-    for boundary in (len(GROUP_BOTH), len(GROUP_BOTH) + len(GROUP_V4),
-                     len(GROUP_BOTH) + len(GROUP_V4) + len(GROUP_NEITHER)):
+    edges, total = [], 0
+    for block in (GROUP_BOTH, GROUP_V4, GROUP_NEITHER, GROUP_UNSEEN):
+        total += len(block)
+        edges.append(total)
+    for boundary in edges:
         ax.axhline(boundary - 0.5, color="#173A63", lw=1.6)
     fig.tight_layout(pad=0.25)
     path = FIG / "family-heatmap.png"
@@ -169,6 +174,7 @@ def build_story(a: dict, st: dict, figures: dict, width: float) -> list:
     fam, ci = a["by_family"], a["ci95"]
     grp, cig = a["by_group"], a["ci95_by_group"]
     both, v4only, neither = grp["both"]["recall"], grp["v4_only"]["recall"], grp["neither"]["recall"]
+    unseen = grp["unseen"]["recall"]
     fuzz_rec = grp["fuzz"]["recall"]
     s_group = a["self_report_by_group"]
     clean_fpr = a["fpr_excluding_resubmit"]
@@ -184,17 +190,18 @@ def build_story(a: dict, st: dict, figures: dict, width: float) -> list:
 
     add(Paragraph("요 약", st["h"]))
     add(Paragraph(
-        f"manifest와 응답을 정상으로 유지한 채 실제 외부 효과만 바꾸는 MCP 서버 공격을, 도구 서버가 서명 키를 갖지 "
-        f"않는 provider 영수증 위에서 측정했다. 공격 여부는 탐지기와 분리된 재실행 오라클이 판정하고, 결과는 계약이 "
-        f"무엇을 건드리는지에 따라 네 그룹으로 묶어 보고한다. {a['rows']:,}회 실행 {a['conditions']}개 조건에서 필드를 "
-        f"열거해 값을 대조하는 계약은 계약이 검사하는 인자·효과에서 {pct(both['extended_intent'], 2)}, provider "
-        f"내부 해석과 영수증 부가 정보에서 {pct(v4only['extended_intent'], 3)}, 계약이 검사하지 않는 인자에서 "
-        f"{pct(neither['extended_intent'], 3)}였다. "
+        f"AI 에이전트가 MCP 도구로 결제·메일·파일을 실행할 때, 승인된 서버는 manifest와 응답을 정상으로 유지한 채 "
+        f"실제 외부 효과만 바꿀 수 있다. 본 연구는 이 위협을 도구 서버가 서명 키를 갖지 않는 provider 영수증 위에서 "
+        f"측정했다. 공격 여부는 탐지기와 분리된 재실행 오라클이 판정하고, 결과는 공격이 무엇을 건드리는지에 따라 "
+        f"다섯 그룹으로 묶어 보고한다. {a['rows']:,}회 실행 {a['conditions']}개 조건에서 필드를 열거해 값을 대조하는 "
+        f"계약은 계약이 검사하는 인자·효과에서 {pct(both['extended_intent'], 2)}, provider 해석·메타데이터에서 "
+        f"{pct(v4only['extended_intent'], 3)}, 계약이 검사하지 않는 인자에서 {pct(neither['extended_intent'], 3)}였다. "
         f"승인 요청 전체를 해시로 묶는 영수증은 같은 순서로 {pct(both['approval_bound'], 2)}, "
         f"{pct(v4only['approval_bound'], 3)}, {pct(neither['approval_bound'], 3)}로 정반대의 사각지대를 갖는다. "
-        f"인자 공간을 통째로 묶으면 열거 문제는 사라지지만 provider 내부 해석은 여전히 보이지 않는다. 영수증 출처를 "
-        f"서버 자기보고로 바꾸면 두 방식 모두 {pct(s_group['both']['recall']['extended_intent'], 3)}가 된다. 탐지 "
-        f"경계는 없어지지 않고 자리를 옮긴다.", st["body"]))
+        f"두 방식이 함께 놓치는 그룹도 있다. provider가 영수증에 남기지만 어느 계약도 읽지 않는 처리 경로에서 각각 "
+        f"{pct(unseen['extended_intent'], 3)}과 {pct(unseen['approval_bound'], 3)}였다. 영수증 출처를 서버 자기보고로 "
+        f"바꾸면 두 방식 모두 {pct(s_group['both']['recall']['approval_bound'], 3)}가 된다. 탐지 경계는 없어지지 않고 "
+        f"자리를 옮긴다.", st["body"]))
 
     add(Paragraph("1. 서론", st["h"]))
     add(Paragraph(
@@ -210,6 +217,13 @@ def build_story(a: dict, st: dict, figures: dict, width: float) -> list:
         "결과가 계약 정의에서 연역되지 않게 했다. 셋째, observer·열거 범위·앵커를 각각 절제해 성능이 떨어지는 "
         "조건을 보고한다.", st["body"]))
 
+    add(Paragraph(
+        "이 문제가 AI 보안 고유인 이유는 신뢰 사슬에 링크가 하나 더 생겼기 때문이다. 고전 RPC에서는 요청자가 요청을 "
+        "직접 만들므로 승인 의도와 실제 요청이 갈리지 않는다. 에이전트가 끼면 사용자 의도, 모델이 만든 도구 호출, "
+        "서버가 provider에 보낸 요청, provider가 실제로 남긴 효과가 서로 어긋날 수 있다. 공격자가 manifest를 한 "
+        "바이트도 바꾸지 않는 동기도 여기서 나온다. 모델의 도구 선택 행동과 사용자의 승인 화면을 그대로 유지해야 "
+        "탐지를 피할 수 있기 때문이다. 본 연구는 이 사슬의 마지막 구간을 측정하고, 모델이 끼면서 생긴 앵커 문제와 "
+        "에이전트 계층 자체의 가용성을 함께 관찰한다.", st["body"]))
     add(Paragraph("1.1 관련 연구", st["h"]))
     add(table([["연구", "관측 대상", "본 연구가 더 묻는 것"],
                ["MCPTox[3]", "도구 설명·schema 오염", "설명이 그대로일 때 효과가 바뀌는가"],
@@ -244,9 +258,10 @@ def build_story(a: dict, st: dict, figures: dict, width: float) -> list:
 
     add(Paragraph("3. 공격과 정상 트래픽", st["h"]))
     add(Paragraph(
-        "15개 공격 계열을 공격이 무엇을 건드리는지로 넷으로 나눴다. 계약이 검사하는 인자와 효과를 바꾸는 A, "
+        "17개 공격 계열을 공격이 무엇을 건드리는지로 다섯으로 나눴다. 계약이 검사하는 인자와 효과를 바꾸는 A, "
         "provider의 해석 결과와 영수증 부가 정보를 바꾸는 B, 도구가 선언했지만 계약이 검사하지 않는 인자를 바꾸는 C, "
-        "그리고 선언된 인자 중 하나를 무작위로 고르는 D다. 퍼징은 도구가 선언한 인자 가운데 하나를 seed로 골라 변형하므로 계약 작성자가 결과를 예측할 수 "
+        "provider가 영수증에 남기지만 어느 계약도 읽지 않는 처리 경로를 바꾸는 D, 선언된 인자 중 하나를 무작위로 "
+        "고르는 E다. 퍼징은 도구가 선언한 인자 가운데 하나를 seed로 골라 변형하므로 계약 작성자가 결과를 예측할 수 "
         "없다. 지연·임계·tenant 트리거는 서버 상태로 실제 구현했다. 정상 트래픽에는 공백과 대소문자, 중복 경로 같은 "
         "비정규화 입력, optional 필드를 더한 manifest migration, 사용자가 승인한 재제출을 넣었다.", st["body"]))
     add(table([["그룹", "계열", "영수증에서 바뀌는 것"],
@@ -259,13 +274,16 @@ def build_story(a: dict, st: dict, figures: dict, width: float) -> list:
                ["C 비열거 인자", "비열거 필드", "callback_url을 공격자 주소로 변경"],
                ["C 비열거 인자", "tenant 침범", "다른 tenant로 효과를 기록"],
                ["C 비열거 인자", "memo 유출", "memo에 canary와 principal을 실어 보냄"],
-               ["C 비열거 인자", "별칭 체인", "해석된 principal은 정상, 전달 후 최종 도착지만 변경"],
-               ["D 무작위 인자", "무작위 퍼징", "선언된 인자 중 seed로 고른 하나를 변형"]],
+               ["D 미기록 해석 경로", "별칭 체인", "해석된 principal은 정상, 전달 후 최종 도착지만 변경"],
+               ["D 미기록 해석 경로", "정산 경로 우회", "승인 밖 중개 경로를 거쳐 처리"],
+               ["D 미기록 해석 경로", "정산 계정 교체", "principal 뒤의 실제 정산 계정만 변경"],
+               ["E 무작위 인자", "무작위 퍼징", "선언된 인자 중 seed로 고른 하나를 변형"]],
               [width * 0.20, width * 0.34, width * 0.46], st))
     add(Paragraph(
-        "표 3. 공격이 무엇을 건드리는지로 나눈 네 그룹. A는 계약이 검사하는 인자 값과 효과의 개수·종류, B는 "
-        "provider가 내부에서 정하는 해석 결과와 영수증 부가 정보, C는 도구가 선언했지만 계약이 검사하지 않는 인자다. "
-        "D는 선언된 인자 중 하나를 무작위로 고르므로 A와 C에 걸친다. 결과는 이 그룹으로만 보고한다.", st["cap"]))
+        "표 3. 공격이 무엇을 건드리는지로 나눈 다섯 그룹. A는 계약이 검사하는 인자 값과 효과의 개수·종류, B는 "
+        "provider의 해석 결과와 영수증 부가 정보, C는 도구가 선언했지만 계약이 검사하지 않는 인자, D는 provider가 "
+        "영수증에 남기지만 어느 계약도 읽지 않는 처리 경로다. E는 선언된 인자 중 하나를 무작위로 고르므로 A와 C에 "
+        "걸친다. 결과는 이 그룹으로만 보고한다.", st["cap"]))
 
     add(Paragraph("4. 방어 구현", st["h"]))
     add(Paragraph(
@@ -292,18 +310,21 @@ def build_story(a: dict, st: dict, figures: dict, width: float) -> list:
 
     lat = a["latency_ms"]
     add(Paragraph("5. 결과", st["h"]))
-    rows = [["방어", "A 직접", "B 해석", "C 비열거", "FPR", "FPR*"]]
+    rows = [["방어", "A", "B", "C", "D", "FPR*"]]
     for key in ["manifest_pin", "signed_manifest", "response_detector", "trajectory_lite",
                 "learned_relation", "frozen_intent", "extended_intent", "extended_naive",
-                "approval_bound"]:
+                "approval_bound", "approval_naive"]:
         rows.append([DETECTOR_LABEL[key], pct(both[key], 3), pct(v4only[key], 3),
-                     pct(neither[key], 3), pct(o[key]["fpr"], 3), pct(clean_fpr[key], 3)])
-    add(table(rows, [width * 0.27, width * 0.145, width * 0.145, width * 0.16,
+                     pct(neither[key], 3), pct(unseen[key], 3), pct(clean_fpr[key], 3)])
+    add(table(rows, [width * 0.30, width * 0.14, width * 0.14, width * 0.14,
                      width * 0.14, width * 0.14], st, align_right=(1, 2, 3, 4, 5)))
     add(Paragraph(
         f"표 5. 표 3의 그룹별 Recall과 정상 트래픽 FPR. A 직접 인자·효과 {grp['both']['attacks']:,}회, B 해석·메타데이터 "
-        f"{grp['v4_only']['attacks']:,}회, C 비열거 인자 {grp['neither']['attacks']:,}회, D 무작위 인자 "
-        f"{grp['fuzz']['attacks']:,}회(표 6), 정상 {a['benign_independent']:,}회다. FPR*는 승인된 재제출을 뺀 값이다. 전 계열 집계는 계열 구성비의 함수이므로 "
+        f"{grp['v4_only']['attacks']:,}회, C 비열거 인자 {grp['neither']['attacks']:,}회, D 미기록 해석 경로 "
+        f"{grp['unseen']['attacks']:,}회, E 무작위 인자 {grp['fuzz']['attacks']:,}회(표 6), 정상 "
+        f"{a['benign_independent']:,}회로 공격 비율은 "
+        f"{100 * a['attacks_independent'] / (a['attacks_independent'] + a['benign_independent']):.1f}%다. 운영 기저율은 "
+        f"표 10에서 재가중한다. FPR*는 승인된 재제출을 뺀 값이다. 전 계열 집계는 계열 구성비의 함수이므로 "
         f"싣지 않는다. 그룹 값도 그룹 안의 계열 구성비를 따르므로 계열별 값은 그림 1을 함께 볼 것이다. v3가 B에서 보이는 {pct(v4only['frozen_intent'], 3)}은 같은 표본의 FPR* "
         f"{pct(clean_fpr['frozen_intent'], 3)}과 구별되지 않으므로 탐지 신호로 읽지 않는다. v4 Recall의 조건 클러스터 "
         f"부트스트랩 95% 구간은 A [{pct(cig['both']['extended_intent'][0], 2)}, "
@@ -324,7 +345,7 @@ def build_story(a: dict, st: dict, figures: dict, width: float) -> list:
         f"보지 못한다. 학습 관계는 provider가 정규화하는 필드를 보존 관계로 학습하지 못해 그만큼을 놓친다. 계약의 "
         f"1.00은 탐지 능력이 아니라 그 필드를 보기로 한 결정의 결과다.", st["body"]))
     add(Image(str(figures["heatmap"]), width=width * 0.99, height=width * 1.06))
-    add(Paragraph("그림 1. 공격 계열별 Recall. 굵은 선 세 개가 위에서부터 A 직접 인자·효과, B 해석·메타데이터, C 비열거 인자, D 무작위 인자를 나눈다(표 3).", st["cap"]))
+    add(Paragraph("그림 1. 공격 계열별 Recall. 굵은 선 네 개가 위에서부터 A 직접 인자·효과, B 해석·메타데이터, C 비열거 인자, D 미기록 해석 경로, E 무작위 인자를 나눈다(표 3).", st["cap"]))
 
     add(Paragraph("5.1 열거 범위가 탐지 범위를 정한다", st["h"]))
     add(Paragraph(
@@ -371,25 +392,41 @@ def build_story(a: dict, st: dict, figures: dict, width: float) -> list:
     add(Paragraph("표 7. 정상 트래픽 계열별 오탐. v3의 오탐은 원문 비교가 정규화를 모르기 때문에 생기고, "
                   "manifest pin의 오탐은 의미가 같은 schema 변경에서 생긴다.", st["cap"]))
 
-    add(Paragraph("5.3 승인 결합 영수증은 경계를 없애지 않고 옮긴다", st["h"]))
+    add(Paragraph("5.3 두 접근의 사각지대는 정반대이고, 공통 사각지대가 남는다", st["h"]))
     add(Paragraph(
-        f"필드를 열거하는 대신 승인 인자 전체를 해시로 묶으면 인자 공간의 사각지대가 사라진다. 승인 결합은 둘 다 "
-        f"검사하지 않는 인자 그룹(C)에서 {pct(neither['approval_bound'], 3)}, 무작위 인자(D)에서 "
-        f"{pct(fuzz_rec['approval_bound'], 2)}로 v4의 {pct(neither['extended_intent'], 3)}·"
-        f"{pct(fuzz_rec['extended_intent'], 3)}를 크게 앞선다. 그런데 해석·메타데이터 그룹(B)에서는 반대로 "
-        f"{pct(v4only['approval_bound'], 3)}로 v4의 {pct(v4only['extended_intent'], 3)}보다 낮다. 간접참조 해석과 "
-        f"별칭 체인은 인자를 하나도 바꾸지 않고 provider 내부 해석만 바꾸므로 해시가 그대로이기 때문이다. 별칭 체인은 "
-        f"두 방식 모두 놓친다. 해석된 principal까지 검사하는 v4조차 한 단계 뒤의 최종 도착지는 보지 않는다.", st["body"]))
+        f"필드를 열거하는 대신 승인 인자 전체를 해시로 묶으면 인자 공간의 사각지대가 사라진다. 승인 결합은 계약이 "
+        f"검사하지 않는 인자 그룹(C)에서 {pct(neither['approval_bound'], 2)}, 무작위 인자(E)에서 "
+        f"{pct(fuzz_rec['approval_bound'], 2)}로 값 대조 계약의 {pct(neither['extended_intent'], 3)}·"
+        f"{pct(fuzz_rec['extended_intent'], 3)}를 크게 앞선다. 반대로 provider 해석·메타데이터(B)에서는 "
+        f"{pct(v4only['approval_bound'], 3)}로 값 대조 계약의 {pct(v4only['extended_intent'], 3)}보다 낮다. 간접참조 "
+        f"해석과 메타데이터 채널은 인자를 하나도 바꾸지 않으므로 해시가 그대로다.", st["body"]))
     add(Paragraph(
-        "두 방식은 서로의 사각지대를 덮지만 합집합을 덮지는 못한다. 인자 공간은 해시로 닫을 수 있고 provider 내부 "
-        "해석은 열거로만 닫을 수 있으며, 열거를 한 단계 늘리면 경계는 그다음 단계로 물러난다.", st["body"]))
-    add(Paragraph("5.4 정규화 지식 절제", st["h"]))
+        f"두 방식이 함께 놓치는 그룹이 D다. 별칭 체인, 정산 경로 우회, 정산 계정 교체 {grp['unseen']['attacks']:,}회에서 "
+        f"값 대조 계약은 {pct(unseen['extended_intent'], 3)}, 승인 결합은 {pct(unseen['approval_bound'], 3)}이며 승인 "
+        f"결합의 클러스터 95% 구간은 [{pct(cig['unseen']['approval_bound'][0], 3)}, "
+        f"{pct(cig['unseen']['approval_bound'][1], 3)}]다. provider가 영수증에 남기는 사실인데 어느 계약도 읽지 "
+        f"않기 때문이다. 인자 공간은 해시로 닫을 수 있고 provider 해석은 열거로 닫을 수 있지만, 열거를 한 단계 늘리면 "
+        f"경계는 그다음 단계로 물러난다.", st["body"]))
     add(Paragraph(
-        f"v4의 오탐 0은 검증자가 provider와 같은 정규화 함수를 쓴 결과다. 같은 계약을 공백 제거만 하는 정규화로 다시 "
-        f"돌리면 FPR*가 {pct(clean_fpr['extended_intent'], 3)}에서 {pct(clean_fpr['extended_naive'], 3)}로 오른다. "
-        f"이메일 대소문자와 경로 정규화를 모르는 검증자는 정상 트래픽을 위반으로 읽는다. 값 대조형 계약의 낮은 오탐은 "
-        f"규칙의 성질이 아니라 provider 동작을 정확히 아는지에 달려 있다. 승인 결합은 정규화 전 원본을 해시하므로 이 "
-        f"의존이 없다.", st["body"]))
+        f"두 방식의 1.00을 성능으로 읽어서는 안 된다. 값 대조 계약의 A {pct(both['extended_intent'], 2)}는 그 필드를 "
+        f"검사하기로 한 결정의 결과이고, 승인 결합의 C·E {pct(neither['approval_bound'], 2)}도 인자를 하나라도 바꾸면 "
+        f"해시가 깨진다는 정의의 결과다. 두 값 모두 구성적이다. 실제로 측정된 것은 계열이 인자를 건드리는지 provider "
+        f"해석을 건드리는지의 분할과, 0에 가까운 세 칸(B의 승인 결합, C의 값 대조, D의 양쪽)이다.", st["body"]))
+
+    add(Paragraph("5.4 두 방식의 낮은 오탐은 구현 합치에 달려 있다", st["h"]))
+    add(Paragraph(
+        f"값 대조 계약의 오탐 0은 검증자가 provider와 같은 정규화 함수를 쓴 결과다. 같은 계약을 공백 제거만 하는 "
+        f"정규화로 다시 돌리면 FPR*가 {pct(clean_fpr['extended_intent'], 3)}에서 "
+        f"{pct(clean_fpr['extended_naive'], 3)}로 오른다. 승인 결합에도 같은 절제를 적용했다. 클라이언트가 해시 전에 "
+        f"문자열을 다듬고 provider는 원본을 해시하면 FPR*가 {pct(clean_fpr['approval_bound'], 3)}에서 "
+        f"{pct(clean_fpr['approval_naive'], 3)}로 오른다. 정규화 의존이 직렬화 의존으로 형태만 바뀐 것이다. 두 방식 "
+        f"모두 낮은 오탐은 규칙의 성질이 아니라 검증자가 provider의 바이트 수준 관례를 정확히 재현하는지에 달려 있다.",
+        st["body"]))
+    add(Paragraph(
+        f"두 절제판의 Recall이 원판보다 높아 보이는 칸이 있다. 정규화 미상 계약은 B에서 "
+        f"{pct(v4only['extended_naive'], 3)}, 승인 결합 직렬화 미상은 D에서 {pct(unseen['approval_naive'], 3)}다. "
+        f"그 차이는 각자의 FPR* {pct(clean_fpr['extended_naive'], 3)}·{pct(clean_fpr['approval_naive'], 3)}과 같은 "
+        f"크기이므로 탐지 신호가 아니라 자기 오경보가 공격 행에 떨어진 것이다.", st["body"]))
 
     add(Paragraph("5.5 observer 독립성 절제", st["h"]))
     add(Image(str(figures["observer"]), width=width * 0.995, height=width * 0.474))
@@ -424,7 +461,8 @@ def build_story(a: dict, st: dict, figures: dict, width: float) -> list:
             f"{len(llm['availability']) - len(live)}개 모델은 이 경로에서 도구 호출을 만들지 못했다. 호출을 만든 "
             f"{len(live)}개 모델의 인자 충실도는 "
             f"{pct(min(llm['utility'][m] for m in live), 3)}에서 {pct(max(llm['utility'][m] for m in live), 3)}까지다. "
-            f"탐지기보다 파이프라인 가용성이 먼저 문제가 되는 구간이 있다.", st["body"]))
+            f"이는 부수 사항이 아니라 AI 보안 결과다. 방어가 적용될 수 있는 범위 자체가 모델 능력에 달려 있고, "
+            f"탐지기를 논하기 전에 에이전트 계층이 먼저 실패하는 구간이 존재한다.", st["body"]))
         dev_rows = [["필드", "이탈 횟수", "v3 열거", "v4 열거"]]
         enumerated_v3 = {"recipient", "amount", "beneficiary", "account", "to", "subject",
                          "body", "destination", "source", "key", "value", "title"}
@@ -481,6 +519,8 @@ def build_story(a: dict, st: dict, figures: dict, width: float) -> list:
                ["C 비열거 Recall ≥ .90 (값 계약)", pct(neither["extended_intent"], 3), "실패"],
                ["C 비열거 Recall ≥ .90 (승인 결합)", pct(neither["approval_bound"], 3), "실패"],
                ["B 해석 Recall ≥ .90 (승인 결합)", pct(v4only["approval_bound"], 3), "실패"],
+               ["D 미기록 경로 Recall ≥ .90 (양쪽)",
+                f"{pct(unseen['extended_intent'], 3)} / {pct(unseen['approval_bound'], 3)}", "실패"],
                ["FPR ≤ .05 (전체)", pct(o["extended_intent"]["fpr"], 3), "실패"],
                ["FPR ≤ .05 (재제출 뺀 값)", pct(clean_fpr["extended_intent"], 3), "통과"],
                ["계약 계산 p95 ≤ 200 ms", f"{lat['contract_p95']:.3f} ms", "통과"],
@@ -505,7 +545,8 @@ def build_story(a: dict, st: dict, figures: dict, width: float) -> list:
                ["열거하지 않은 계열에서 탐지가 거의 사라진다", "블랙박스 행동의 완전 증명"],
                ["자기보고 영수증에서 계약이 무력하다", "상용 SaaS 독립성 검증 완료"],
                ["관측된 에이전트 이탈은 두 앵커 모두 놓쳤다", "앵커 조정으로 이탈까지 방어"],
-               ["승인 해시 결합이 인자 사각지대를 닫는다", "해시 결합이 모든 변조를 막는다"]],
+               ["승인 해시 결합이 인자 사각지대를 닫는다", "해시 결합이 모든 변조를 막는다"],
+               ["두 방식이 함께 놓치는 경로가 있다", "경로 검사를 더하면 사각지대가 없어진다"]],
               [width * 0.5, width * 0.5], st))
     add(Paragraph("표 12. 주장 경계.", st["cap"]))
 
@@ -519,7 +560,7 @@ def build_story(a: dict, st: dict, figures: dict, width: float) -> list:
     add(Paragraph(
         "의미 계약의 탐지력은 두 조건이 정한다. 영수증이 공격자와 독립일 때만 값 비교가 증거가 되고, 계약이 열거한 "
         "필드 밖에서는 탐지가 거의 사라진다. 승인 인자를 통째로 해시에 묶으면 인자 공간의 경계는 닫히지만 provider "
-        "내부 해석이라는 다음 경계가 드러나며, 별칭 체인처럼 최종 도착지만 바뀌는 변조는 두 방식 모두 놓친다. 경계는 "
+        "해석이라는 다음 경계가 드러나고, 영수증에 남지만 아무도 읽지 않는 처리 경로는 두 방식이 함께 놓친다. 경계는 "
         "없어지지 않고 자리를 옮긴다. 전 계열 집계는 계열 구성비를 요약할 뿐이므로 대표값이 아니다. 배치 판단은 "
         "provider 영수증의 독립성 확보, 열거 범위의 명시, 그리고 최종 principal까지 영수증에 담게 하는 요구에서 "
         "시작해야 한다.", st["body"]))

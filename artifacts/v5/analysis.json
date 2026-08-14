@@ -1,12 +1,12 @@
 {
-  "rows": 12672,
-  "conditions": 176,
-  "attacks_independent": 4458,
+  "rows": 13824,
+  "conditions": 192,
+  "attacks_independent": 5034,
   "benign_independent": 1878,
   "overall": {
     "manifest_pin": {
       "tp": 0,
-      "fn": 4458,
+      "fn": 5034,
       "fp": 288,
       "tn": 1590,
       "precision": 0.0,
@@ -16,7 +16,7 @@
     },
     "signed_manifest": {
       "tp": 0,
-      "fn": 4458,
+      "fn": 5034,
       "fp": 0,
       "tn": 1878,
       "precision": 0.0,
@@ -26,7 +26,7 @@
     },
     "response_detector": {
       "tp": 0,
-      "fn": 4458,
+      "fn": 5034,
       "fp": 0,
       "tn": 1878,
       "precision": 0.0,
@@ -36,69 +36,79 @@
     },
     "trajectory_lite": {
       "tp": 1152,
-      "fn": 3306,
+      "fn": 3882,
       "fp": 288,
       "tn": 1590,
       "precision": 0.8,
-      "recall": 0.25841184387617766,
-      "f1": 0.3906408952187182,
+      "recall": 0.22884386174016685,
+      "f1": 0.355885078776645,
       "fpr": 0.15335463258785942
     },
     "learned_relation": {
-      "tp": 2098,
-      "fn": 2360,
+      "tp": 2116,
+      "fn": 2918,
       "fp": 288,
       "tn": 1590,
-      "precision": 0.8792958927074602,
-      "recall": 0.4706146253925527,
-      "f1": 0.6130917592051431,
+      "precision": 0.8801996672212978,
+      "recall": 0.42034167659912597,
+      "f1": 0.5689701532670072,
       "fpr": 0.15335463258785942
     },
     "frozen_intent": {
-      "tp": 2380,
-      "fn": 2078,
+      "tp": 2444,
+      "fn": 2590,
       "fp": 426,
       "tn": 1452,
-      "precision": 0.8481824661439772,
-      "recall": 0.5338716913414087,
-      "f1": 0.6552863436123348,
+      "precision": 0.8515679442508711,
+      "recall": 0.4854986094557012,
+      "f1": 0.618421052631579,
       "fpr": 0.2268370607028754
     },
     "extended_intent": {
-      "tp": 2932,
-      "fn": 1526,
+      "tp": 2945,
+      "fn": 2089,
       "fp": 288,
       "tn": 1590,
-      "precision": 0.9105590062111801,
-      "recall": 0.6576940331987439,
-      "f1": 0.7637405574368326,
+      "precision": 0.9109186514073616,
+      "recall": 0.5850218514104092,
+      "f1": 0.7124712713197048,
       "fpr": 0.15335463258785942
     },
     "extended_naive": {
-      "tp": 3050,
-      "fn": 1408,
+      "tp": 3111,
+      "fn": 1923,
       "fp": 426,
       "tn": 1452,
-      "precision": 0.877445339470656,
-      "recall": 0.6841633019291162,
-      "f1": 0.7688429543735822,
+      "precision": 0.8795589482612384,
+      "recall": 0.6179976162097736,
+      "f1": 0.7259362968148407,
       "fpr": 0.2268370607028754
     },
     "approval_bound": {
       "tp": 3594,
-      "fn": 864,
+      "fn": 1440,
       "fp": 288,
       "tn": 1590,
       "precision": 0.9258114374034003,
-      "recall": 0.8061911170928667,
-      "f1": 0.8618705035971223,
+      "recall": 0.7139451728247914,
+      "f1": 0.8061911170928667,
       "fpr": 0.15335463258785942
+    },
+    "approval_naive": {
+      "tp": 3954,
+      "fn": 1080,
+      "fp": 690,
+      "tn": 1188,
+      "precision": 0.851421188630491,
+      "recall": 0.7854588796185935,
+      "f1": 0.8171109733415994,
+      "fpr": 0.36741214057507987
     }
   },
   "self_report": {
     "manifest_pin": {
       "tp": 0,
-      "fn": 4458,
+      "fn": 5034,
       "fp": 288,
       "tn": 1590,
       "precision": 0.0,
@@ -108,7 +118,7 @@
     },
     "signed_manifest": {
       "tp": 0,
-      "fn": 4458,
+      "fn": 5034,
       "fp": 0,
       "tn": 1878,
       "precision": 0.0,
@@ -118,7 +128,7 @@
     },
     "response_detector": {
       "tp": 0,
-      "fn": 4458,
+      "fn": 5034,
       "fp": 0,
       "tn": 1878,
       "precision": 0.0,
@@ -128,7 +138,7 @@
     },
     "trajectory_lite": {
       "tp": 0,
-      "fn": 4458,
+      "fn": 5034,
       "fp": 288,
       "tn": 1590,
       "precision": 0.0,
@@ -138,7 +148,7 @@
     },
     "learned_relation": {
       "tp": 0,
-      "fn": 4458,
+      "fn": 5034,
       "fp": 288,
       "tn": 1590,
       "precision": 0.0,
@@ -147,18 +157,18 @@
       "fpr": 0.15335463258785942
     },
     "frozen_intent": {
-      "tp": 366,
-      "fn": 4092,
+      "tp": 414,
+      "fn": 4620,
       "fp": 426,
       "tn": 1452,
-      "precision": 0.4621212121212121,
-      "recall": 0.08209959623149395,
-      "f1": 0.13942857142857143,
+      "precision": 0.4928571428571429,
+      "recall": 0.08224076281287247,
+      "f1": 0.14096016343207354,
       "fpr": 0.2268370607028754
     },
     "extended_intent": {
       "tp": 0,
-      "fn": 4458,
+      "fn": 5034,
       "fp": 288,
       "tn": 1590,
       "precision": 0.0,
@@ -167,56 +177,66 @@
       "fpr": 0.15335463258785942
     },
     "extended_naive": {
-      "tp": 366,
-      "fn": 4092,
+      "tp": 414,
+      "fn": 4620,
       "fp": 426,
       "tn": 1452,
-      "precision": 0.4621212121212121,
-      "recall": 0.08209959623149395,
-      "f1": 0.13942857142857143,
+      "precision": 0.4928571428571429,
+      "recall": 0.08224076281287247,
+      "f1": 0.14096016343207354,
       "fpr": 0.2268370607028754
     },
     "approval_bound": {
       "tp": 0,
-      "fn": 4458,
+      "fn": 5034,
       "fp": 288,
       "tn": 1590,
       "precision": 0.0,
       "recall": 0.0,
       "f1": 0.0,
       "fpr": 0.15335463258785942
+    },
+    "approval_naive": {
+      "tp": 1254,
+      "fn": 3780,
+      "fp": 690,
+      "tn": 1188,
+      "precision": 0.6450617283950617,
+      "recall": 0.24910607866507747,
+      "f1": 0.3594153052450559,
+      "fpr": 0.36741214057507987
     }
   },
   "signature_rejects_self_report": 1.0,
   "ci95": {
     "frozen_intent": {
       "recall": [
-        0.45224719101123595,
-        0.6062416998671979
+        0.4129505192425168,
+        0.5587404994571118
       ],
       "fpr": [
-        0.13402061855670103,
-        0.3274647887323944
+        0.13833333333333334,
+        0.3258620689655172
       ]
     },
     "extended_intent": {
       "recall": [
-        0.5773067331670823,
-        0.7377279102384292
+        0.5060400151000377,
+        0.6612903225806451
       ],
       "fpr": [
-        0.06206896551724138,
-        0.2585278276481149
+        0.06545454545454546,
+        0.25280898876404495
       ]
     },
     "approval_bound": {
       "recall": [
-        0.7320703653585927,
-        0.8728971962616823
+        0.637997432605905,
+        0.7845601436265709
       ],
       "fpr": [
-        0.06206896551724138,
-        0.2585278276481149
+        0.06545454545454546,
+        0.25280898876404495
       ]
     }
   },
@@ -251,26 +271,40 @@
     },
     "neither": {
       "frozen_intent": [
-        0.041666666666666664,
-        0.13541666666666666
+        0.027777777777777776,
+        0.1527777777777778
       ],
       "extended_intent": [
         0.0,
-        0.03125
+        0.0
       ],
       "approval_bound": [
-        0.59375,
-        0.875
+        1.0,
+        1.0
+      ]
+    },
+    "unseen": {
+      "frozen_intent": [
+        0.027777777777777776,
+        0.1527777777777778
+      ],
+      "extended_intent": [
+        0.0,
+        0.041666666666666664
+      ],
+      "approval_bound": [
+        0.0,
+        0.0
       ]
     },
     "fuzz": {
       "frozen_intent": [
-        0.3055555555555556,
-        0.5138888888888888
+        0.3923611111111111,
+        0.5694444444444444
       ],
       "extended_intent": [
-        0.3333333333333333,
-        0.4722222222222222
+        0.4027777777777778,
+        0.5243055555555556
       ],
       "approval_bound": [
         1.0,
@@ -292,7 +326,8 @@
         "frozen_intent": 0.08333333333333333,
         "extended_intent": 0.041666666666666664,
         "extended_naive": 0.08333333333333333,
-        "approval_bound": 0.0
+        "approval_bound": 0.0,
+        "approval_naive": 0.25
       },
       "fpr": {
         "manifest_pin": null,
@@ -303,7 +338,8 @@
         "frozen_intent": null,
         "extended_intent": null,
         "extended_naive": null,
-        "approval_bound": null
+        "approval_bound": null,
+        "approval_naive": null
       }
     },
     "clean": {
@@ -319,7 +355,8 @@
         "frozen_intent": null,
         "extended_intent": null,
         "extended_naive": null,
-        "approval_bound": null
+        "approval_bound": null,
+        "approval_naive": null
       },
       "fpr": {
         "manifest_pin": 0.0,
@@ -330,7 +367,8 @@
         "frozen_intent": 0.08333333333333333,
         "extended_intent": 0.0,
         "extended_naive": 0.08333333333333333,
-        "approval_bound": 0.0
+        "approval_bound": 0.0,
+        "approval_naive": 0.25
       }
     },
     "cross_channel": {
@@ -346,7 +384,8 @@
         "frozen_intent": 1.0,
         "extended_intent": 1.0,
         "extended_naive": 1.0,
-        "approval_bound": 1.0
+        "approval_bound": 1.0,
+        "approval_naive": 1.0
       },
       "fpr": {
         "manifest_pin": null,
@@ -357,7 +396,8 @@
         "frozen_intent": null,
         "extended_intent": null,
         "extended_naive": null,
-        "approval_bound": null
+        "approval_bound": null,
+        "approval_naive": null
       }
     },
     "effect_type_change": {
@@ -373,7 +413,8 @@
         "frozen_intent": 1.0,
         "extended_intent": 1.0,
         "extended_naive": 1.0,
-        "approval_bound": 1.0
+        "approval_bound": 1.0,
+        "approval_naive": 1.0
       },
       "fpr": {
         "manifest_pin": null,
@@ -384,7 +425,8 @@
         "frozen_intent": null,
         "extended_intent": null,
         "extended_naive": null,
-        "approval_bound": null
+        "approval_bound": null,
+        "approval_naive": null
       }
     },
     "fuzz_field": {
@@ -396,11 +438,12 @@
         "signed_manifest": 0.0,
         "response_detector": 0.0,
         "trajectory_lite": 0.0,
-        "learned_relation": 0.3159722222222222,
-        "frozen_intent": 0.4097222222222222,
-        "extended_intent": 0.4097222222222222,
-        "extended_naive": 0.4444444444444444,
-        "approval_bound": 1.0
+        "learned_relation": 0.3784722222222222,
+        "frozen_intent": 0.4652777777777778,
+        "extended_intent": 0.4548611111111111,
+        "extended_naive": 0.4895833333333333,
+        "approval_bound": 1.0,
+        "approval_naive": 1.0
       },
       "fpr": {
         "manifest_pin": null,
@@ -411,7 +454,8 @@
         "frozen_intent": null,
         "extended_intent": null,
         "extended_naive": null,
-        "approval_bound": null
+        "approval_bound": null,
+        "approval_naive": null
       }
     },
     "hidden_duplication": {
@@ -427,7 +471,8 @@
         "frozen_intent": 1.0,
         "extended_intent": 1.0,
         "extended_naive": 1.0,
-        "approval_bound": 1.0
+        "approval_bound": 1.0,
+        "approval_naive": 1.0
       },
       "fpr": {
         "manifest_pin": null,
@@ -438,7 +483,8 @@
         "frozen_intent": null,
         "extended_intent": null,
         "extended_naive": null,
-        "approval_bound": null
+        "approval_bound": null,
+        "approval_naive": null
       }
     },
     "indirect_reference": {
@@ -454,7 +500,8 @@
         "frozen_intent": 0.08333333333333333,
         "extended_intent": 1.0,
         "extended_naive": 1.0,
-        "approval_bound": 0.0
+        "approval_bound": 0.0,
+        "approval_naive": 0.25
       },
       "fpr": {
         "manifest_pin": null,
@@ -465,7 +512,37 @@
         "frozen_intent": null,
         "extended_intent": null,
         "extended_naive": null,
-        "approval_bound": null
+        "approval_bound": null,
+        "approval_naive": null
+      }
+    },
+    "ledger_account_swap": {
+      "runs": 288,
+      "attacks": 288,
+      "benign": 0,
+      "recall": {
+        "manifest_pin": 0.0,
+        "signed_manifest": 0.0,
+        "response_detector": 0.0,
+        "trajectory_lite": 0.0,
+        "learned_relation": 0.0,
+        "frozen_intent": 0.08333333333333333,
+        "extended_intent": 0.0,
+        "extended_naive": 0.08333333333333333,
+        "approval_bound": 0.0,
+        "approval_naive": 0.25
+      },
+      "fpr": {
+        "manifest_pin": null,
+        "signed_manifest": null,
+        "response_detector": null,
+        "trajectory_lite": null,
+        "learned_relation": null,
+        "frozen_intent": null,
+        "extended_intent": null,
+        "extended_naive": null,
+        "approval_bound": null,
+        "approval_naive": null
       }
     },
     "memo_exfiltration": {
@@ -481,7 +558,8 @@
         "frozen_intent": 0.08333333333333333,
         "extended_intent": 0.0,
         "extended_naive": 0.08333333333333333,
-        "approval_bound": 1.0
+        "approval_bound": 1.0,
+        "approval_naive": 1.0
       },
       "fpr": {
         "manifest_pin": null,
@@ -492,7 +570,8 @@
         "frozen_intent": null,
         "extended_intent": null,
         "extended_naive": null,
-        "approval_bound": null
+        "approval_bound": null,
+        "approval_naive": null
       }
     },
     "metadata_channel": {
@@ -508,7 +587,8 @@
         "frozen_intent": 0.08333333333333333,
         "extended_intent": 1.0,
         "extended_naive": 1.0,
-        "approval_bound": 0.0
+        "approval_bound": 0.0,
+        "approval_naive": 0.25
       },
       "fpr": {
         "manifest_pin": null,
@@ -519,7 +599,8 @@
         "frozen_intent": null,
         "extended_intent": null,
         "extended_naive": null,
-        "approval_bound": null
+        "approval_bound": null,
+        "approval_naive": null
       }
     },
     "migration": {
@@ -535,7 +616,8 @@
         "frozen_intent": null,
         "extended_intent": null,
         "extended_naive": null,
-        "approval_bound": null
+        "approval_bound": null,
+        "approval_naive": null
       },
       "fpr": {
         "manifest_pin": 1.0,
@@ -546,7 +628,8 @@
         "frozen_intent": 0.08333333333333333,
         "extended_intent": 0.0,
         "extended_naive": 0.08333333333333333,
-        "approval_bound": 0.0
+        "approval_bound": 0.0,
+        "approval_naive": 0.25
       }
     },
     "normalisation": {
@@ -562,7 +645,8 @@
         "frozen_intent": null,
         "extended_intent": null,
         "extended_naive": null,
-        "approval_bound": null
+        "approval_bound": null,
+        "approval_naive": null
       },
       "fpr": {
         "manifest_pin": 0.0,
@@ -573,7 +657,8 @@
         "frozen_intent": 0.08333333333333333,
         "extended_intent": 0.0,
         "extended_naive": 0.08333333333333333,
-        "approval_bound": 0.0
+        "approval_bound": 0.0,
+        "approval_naive": 0.25
       }
     },
     "ordering_swap": {
@@ -589,7 +674,8 @@
         "frozen_intent": 0.16666666666666666,
         "extended_intent": 1.0,
         "extended_naive": 1.0,
-        "approval_bound": 1.0
+        "approval_bound": 1.0,
+        "approval_naive": 1.0
       },
       "fpr": {
         "manifest_pin": 0.0,
@@ -600,7 +686,8 @@
         "frozen_intent": 0.05555555555555555,
         "extended_intent": 0.0,
         "extended_naive": 0.05555555555555555,
-        "approval_bound": 0.0
+        "approval_bound": 0.0,
+        "approval_naive": 0.25
       }
     },
     "resubmit": {
@@ -616,7 +703,8 @@
         "frozen_intent": null,
         "extended_intent": null,
         "extended_naive": null,
-        "approval_bound": null
+        "approval_bound": null,
+        "approval_naive": null
       },
       "fpr": {
         "manifest_pin": 0.0,
@@ -627,7 +715,37 @@
         "frozen_intent": 1.0,
         "extended_intent": 1.0,
         "extended_naive": 1.0,
-        "approval_bound": 1.0
+        "approval_bound": 1.0,
+        "approval_naive": 1.0
+      }
+    },
+    "route_diversion": {
+      "runs": 288,
+      "attacks": 288,
+      "benign": 0,
+      "recall": {
+        "manifest_pin": 0.0,
+        "signed_manifest": 0.0,
+        "response_detector": 0.0,
+        "trajectory_lite": 0.0,
+        "learned_relation": 0.0,
+        "frozen_intent": 0.08333333333333333,
+        "extended_intent": 0.0,
+        "extended_naive": 0.08333333333333333,
+        "approval_bound": 0.0,
+        "approval_naive": 0.25
+      },
+      "fpr": {
+        "manifest_pin": null,
+        "signed_manifest": null,
+        "response_detector": null,
+        "trajectory_lite": null,
+        "learned_relation": null,
+        "frozen_intent": null,
+        "extended_intent": null,
+        "extended_naive": null,
+        "approval_bound": null,
+        "approval_naive": null
       }
     },
     "scope_expansion": {
@@ -643,7 +761,8 @@
         "frozen_intent": 1.0,
         "extended_intent": 1.0,
         "extended_naive": 1.0,
-        "approval_bound": 1.0
+        "approval_bound": 1.0,
+        "approval_naive": 1.0
       },
       "fpr": {
         "manifest_pin": null,
@@ -654,7 +773,8 @@
         "frozen_intent": null,
         "extended_intent": null,
         "extended_naive": null,
-        "approval_bound": null
+        "approval_bound": null,
+        "approval_naive": null
       }
     },
     "target_substitution": {
@@ -670,7 +790,8 @@
         "frozen_intent": 1.0,
         "extended_intent": 1.0,
         "extended_naive": 1.0,
-        "approval_bound": 1.0
+        "approval_bound": 1.0,
+        "approval_naive": 1.0
       },
       "fpr": {
         "manifest_pin": 0.0,
@@ -681,7 +802,8 @@
         "frozen_intent": 0.10588235294117647,
         "extended_intent": 0.0,
         "extended_naive": 0.10588235294117647,
-        "approval_bound": 0.0
+        "approval_bound": 0.0,
+        "approval_naive": 0.25882352941176473
       }
     },
     "tenant_crossing": {
@@ -697,7 +819,8 @@
         "frozen_intent": 0.08333333333333333,
         "extended_intent": 0.0,
         "extended_naive": 0.08333333333333333,
-        "approval_bound": 1.0
+        "approval_bound": 1.0,
+        "approval_naive": 1.0
       },
       "fpr": {
         "manifest_pin": null,
@@ -708,7 +831,8 @@
         "frozen_intent": null,
         "extended_intent": null,
         "extended_naive": null,
-        "approval_bound": null
+        "approval_bound": null,
+        "approval_naive": null
       }
     },
     "unenumerated_field": {
@@ -724,7 +848,8 @@
         "frozen_intent": 0.08333333333333333,
         "extended_intent": 0.0,
         "extended_naive": 0.08333333333333333,
-        "approval_bound": 1.0
+        "approval_bound": 1.0,
+        "approval_naive": 1.0
       },
       "fpr": {
         "manifest_pin": null,
@@ -735,7 +860,8 @@
         "frozen_intent": null,
         "extended_intent": null,
         "extended_naive": null,
-        "approval_bound": null
+        "approval_bound": null,
+        "approval_naive": null
       }
     },
     "unit_swap": {
@@ -751,7 +877,8 @@
         "frozen_intent": 0.08333333333333333,
         "extended_intent": 0.25,
         "extended_naive": 0.3333333333333333,
-        "approval_bound": 1.0
+        "approval_bound": 1.0,
+        "approval_naive": 1.0
       },
       "fpr": {
         "manifest_pin": null,
@@ -762,7 +889,8 @@
         "frozen_intent": null,
         "extended_intent": null,
         "extended_naive": null,
-        "approval_bound": null
+        "approval_bound": null,
+        "approval_naive": null
       }
     },
     "value_scaling": {
@@ -778,7 +906,8 @@
         "frozen_intent": 1.0,
         "extended_intent": 1.0,
         "extended_naive": 1.0,
-        "approval_bound": 1.0
+        "approval_bound": 1.0,
+        "approval_naive": 1.0
       },
       "fpr": {
         "manifest_pin": null,
@@ -789,7 +918,8 @@
         "frozen_intent": null,
         "extended_intent": null,
         "extended_naive": null,
-        "approval_bound": null
+        "approval_bound": null,
+        "approval_naive": null
       }
     }
   },
@@ -805,7 +935,8 @@
         "frozen_intent": 1.0,
         "extended_intent": 1.0,
         "extended_naive": 1.0,
-        "approval_bound": 1.0
+        "approval_bound": 1.0,
+        "approval_naive": 1.0
       }
     },
     "v4_only": {
@@ -819,11 +950,12 @@
         "frozen_intent": 0.08974358974358974,
         "extended_intent": 0.7692307692307693,
         "extended_naive": 0.7948717948717948,
-        "approval_bound": 0.38461538461538464
+        "approval_bound": 0.38461538461538464,
+        "approval_naive": 0.5384615384615384
       }
     },
     "neither": {
-      "attacks": 1152,
+      "attacks": 864,
       "recall": {
         "manifest_pin": 0.0,
         "signed_manifest": 0.0,
@@ -831,9 +963,25 @@
         "trajectory_lite": 0.0,
         "learned_relation": 0.0,
         "frozen_intent": 0.08333333333333333,
-        "extended_intent": 0.010416666666666666,
+        "extended_intent": 0.0,
         "extended_naive": 0.08333333333333333,
-        "approval_bound": 0.75
+        "approval_bound": 1.0,
+        "approval_naive": 1.0
+      }
+    },
+    "unseen": {
+      "attacks": 864,
+      "recall": {
+        "manifest_pin": 0.0,
+        "signed_manifest": 0.0,
+        "response_detector": 0.0,
+        "trajectory_lite": 0.0,
+        "learned_relation": 0.0,
+        "frozen_intent": 0.08333333333333333,
+        "extended_intent": 0.013888888888888888,
+        "extended_naive": 0.08333333333333333,
+        "approval_bound": 0.0,
+        "approval_naive": 0.25
       }
     },
     "fuzz": {
@@ -843,11 +991,12 @@
         "signed_manifest": 0.0,
         "response_detector": 0.0,
         "trajectory_lite": 0.0,
-        "learned_relation": 0.3159722222222222,
-        "frozen_intent": 0.4097222222222222,
-        "extended_intent": 0.4097222222222222,
-        "extended_naive": 0.4444444444444444,
-        "approval_bound": 1.0
+        "learned_relation": 0.3784722222222222,
+        "frozen_intent": 0.4652777777777778,
+        "extended_intent": 0.4548611111111111,
+        "extended_naive": 0.4895833333333333,
+        "approval_bound": 1.0,
+        "approval_naive": 1.0
       }
     }
   },
@@ -863,7 +1012,8 @@
         "frozen_intent": 0.07780979827089338,
         "extended_intent": 0.0,
         "extended_naive": 0.07780979827089338,
-        "approval_bound": 0.0
+        "approval_bound": 0.0,
+        "approval_naive": 0.2478386167146974
       }
     },
     "v4_only": {
@@ -877,11 +1027,12 @@
         "frozen_intent": 0.08974358974358974,
         "extended_intent": 0.0,
         "extended_naive": 0.08974358974358974,
-        "approval_bound": 0.0
+        "approval_bound": 0.0,
+        "approval_naive": 0.25
       }
     },
     "neither": {
-      "attacks": 1152,
+      "attacks": 864,
       "recall": {
         "manifest_pin": 0.0,
         "signed_manifest": 0.0,
@@ -891,7 +1042,23 @@
         "frozen_intent": 0.08333333333333333,
         "extended_intent": 0.0,
         "extended_naive": 0.08333333333333333,
-        "approval_bound": 0.0
+        "approval_bound": 0.0,
+        "approval_naive": 0.25
+      }
+    },
+    "unseen": {
+      "attacks": 864,
+      "recall": {
+        "manifest_pin": 0.0,
+        "signed_manifest": 0.0,
+        "response_detector": 0.0,
+        "trajectory_lite": 0.0,
+        "learned_relation": 0.0,
+        "frozen_intent": 0.08333333333333333,
+        "extended_intent": 0.0,
+        "extended_naive": 0.08333333333333333,
+        "approval_bound": 0.0,
+        "approval_naive": 0.25
       }
     },
     "fuzz": {
@@ -905,7 +1072,8 @@
         "frozen_intent": 0.08333333333333333,
         "extended_intent": 0.0,
         "extended_naive": 0.08333333333333333,
-        "approval_bound": 0.0
+        "approval_bound": 0.0,
+        "approval_naive": 0.25
       }
     }
   },
@@ -986,117 +1154,118 @@
     "frozen_intent": 0.08679245283018867,
     "extended_intent": 0.0,
     "extended_naive": 0.08679245283018867,
-    "approval_bound": 0.0
+    "approval_bound": 0.0,
+    "approval_naive": 0.2528301886792453
   },
   "prevalence_excluding_resubmit": {
     "1": {
-      "frozen_intent": 0.6588307556027252,
-      "extended_intent": 0.7935047361299052,
-      "learned_relation": 0.6400244051250763,
-      "approval_bound": 0.8926974664679583
+      "frozen_intent": 0.6175683639005803,
+      "extended_intent": 0.7381877428249154,
+      "learned_relation": 0.591888111888112,
+      "approval_bound": 0.8331015299026425
     },
     "9": {
-      "frozen_intent": 0.4612274925810164,
-      "extended_intent": 0.7935047361299052,
-      "learned_relation": 0.6400244051250763,
-      "approval_bound": 0.8926974664679583
+      "frozen_intent": 0.4283879263473854,
+      "extended_intent": 0.7381877428249154,
+      "learned_relation": 0.591888111888112,
+      "approval_bound": 0.8331015299026425
     },
     "99": {
-      "frozen_intent": 0.10544234291648805,
-      "extended_intent": 0.7935047361299052,
-      "learned_relation": 0.6400244051250763,
-      "approval_bound": 0.8926974664679583
+      "frozen_intent": 0.09634867013664294,
+      "extended_intent": 0.7381877428249154,
+      "learned_relation": 0.591888111888112,
+      "approval_bound": 0.8331015299026425
     },
     "999": {
-      "frozen_intent": 0.0121005104815324,
-      "extended_intent": 0.7935047361299052,
-      "learned_relation": 0.6400244051250763,
-      "approval_bound": 0.8926974664679583
+      "frozen_intent": 0.01101014240051636,
+      "extended_intent": 0.7381877428249154,
+      "learned_relation": 0.591888111888112,
+      "approval_bound": 0.8331015299026425
     }
   },
   "prevalence": {
     "1": {
-      "frozen_intent": 0.6064281678858618,
-      "extended_intent": 0.7263129319753356,
-      "learned_relation": 0.5795856332623128
+      "frozen_intent": 0.5670600898137453,
+      "extended_intent": 0.6730669182372486,
+      "learned_relation": 0.5342093949706039
     },
     "9": {
-      "frozen_intent": 0.2986356263715294,
-      "extended_intent": 0.4329945840054769,
-      "learned_relation": 0.33016246828715967
+      "frozen_intent": 0.27530149316039687,
+      "extended_intent": 0.39459003042519286,
+      "learned_relation": 0.300186872342576
     },
     "99": {
-      "frozen_intent": 0.044506478394875114,
-      "extended_intent": 0.07811184566723436,
-      "learned_relation": 0.056521040827073196
+      "frozen_intent": 0.040555605626037126,
+      "extended_intent": 0.06978198830046337,
+      "learned_relation": 0.05063610116975398
     },
     "999": {
-      "frozen_intent": 0.004680127185066655,
-      "extended_intent": 0.008494103050712631,
-      "learned_relation": 0.006085328336525254
+      "frozen_intent": 0.0042569725084113065,
+      "extended_intent": 0.007559090851594275,
+      "learned_relation": 0.005437036264396819
     }
   },
   "fuzz_by_tool": {
     "calendar_invite": {
       "runs": 36,
-      "recall_v3": 0.4166666666666667,
-      "recall_v4": 0.4166666666666667,
+      "recall_v3": 0.4444444444444444,
+      "recall_v4": 0.4444444444444444,
       "enumerated": 2,
       "declared": 5,
       "share": 0.4
     },
     "db_update": {
       "runs": 36,
-      "recall_v3": 0.16666666666666666,
-      "recall_v4": 0.16666666666666666,
+      "recall_v3": 0.4166666666666667,
+      "recall_v4": 0.4166666666666667,
       "enumerated": 2,
       "declared": 5,
       "share": 0.4
     },
     "file_move": {
       "runs": 36,
-      "recall_v3": 0.6388888888888888,
-      "recall_v4": 0.5,
+      "recall_v3": 0.5555555555555556,
+      "recall_v4": 0.3888888888888889,
       "enumerated": 2,
       "declared": 5,
       "share": 0.4
     },
     "mail_send": {
       "runs": 36,
-      "recall_v3": 0.6388888888888888,
-      "recall_v4": 0.5,
+      "recall_v3": 0.7777777777777778,
+      "recall_v4": 0.6666666666666666,
       "enumerated": 3,
       "declared": 6,
       "share": 0.5
     },
     "payment_refund": {
       "runs": 36,
-      "recall_v3": 0.3611111111111111,
-      "recall_v4": 0.4444444444444444,
+      "recall_v3": 0.4166666666666667,
+      "recall_v4": 0.5,
       "enumerated": 2,
       "declared": 6,
       "share": 0.3333333333333333
     },
     "payment_transfer": {
       "runs": 36,
-      "recall_v3": 0.3055555555555556,
-      "recall_v4": 0.5,
+      "recall_v3": 0.3611111111111111,
+      "recall_v4": 0.4722222222222222,
       "enumerated": 2,
       "declared": 6,
       "share": 0.3333333333333333
     },
     "update_beneficiary": {
       "runs": 36,
-      "recall_v3": 0.3333333333333333,
-      "recall_v4": 0.3333333333333333,
+      "recall_v3": 0.3611111111111111,
+      "recall_v4": 0.3611111111111111,
       "enumerated": 2,
       "declared": 5,
       "share": 0.4
     },
     "webhook_post": {
       "runs": 36,
-      "recall_v3": 0.4166666666666667,
-      "recall_v4": 0.4166666666666667,
+      "recall_v3": 0.3888888888888889,
+      "recall_v4": 0.3888888888888889,
       "enumerated": 2,
       "declared": 5,
       "share": 0.4
@@ -1111,98 +1280,98 @@
   "prevalence_bounds": {
     "1": {
       "frozen_intent": {
-        "point": 0.6588307556027252,
-        "worst": 0.6588307556027252,
+        "point": 0.6175683639005803,
+        "worst": 0.6175683639005803,
         "measured_zero_fp": false
       },
       "extended_intent": {
-        "point": 0.7935047361299052,
-        "worst": 0.7677737528913716,
+        "point": 0.7381877428249154,
+        "worst": 0.7131901840490797,
         "measured_zero_fp": true
       },
       "learned_relation": {
-        "point": 0.6400244051250763,
-        "worst": 0.6167262750477683,
+        "point": 0.591888111888112,
+        "worst": 0.5696083269774328,
         "measured_zero_fp": true
       },
       "approval_bound": {
-        "point": 0.8926974664679583,
-        "worst": 0.866058877866581,
+        "point": 0.8331015299026425,
+        "worst": 0.8069453279946114,
         "measured_zero_fp": true
       }
     },
     "9": {
       "frozen_intent": {
-        "point": 0.4612274925810164,
-        "worst": 0.4612274925810164,
+        "point": 0.4283879263473854,
+        "worst": 0.4283879263473854,
         "measured_zero_fp": false
       },
       "extended_intent": {
-        "point": 0.7935047361299052,
-        "worst": 0.6096267803305958,
+        "point": 0.7381877428249154,
+        "worst": 0.5611661585365852,
         "measured_zero_fp": true
       },
       "learned_relation": {
-        "point": 0.6400244051250763,
-        "worst": 0.47763232783153103,
+        "point": 0.591888111888112,
+        "worst": 0.43777800765490843,
         "measured_zero_fp": true
       },
       "approval_bound": {
-        "point": 0.8926974664679583,
-        "worst": 0.6991537788152904,
+        "point": 0.8331015299026425,
+        "worst": 0.6449528936742934,
         "measured_zero_fp": true
       }
     },
     "99": {
       "frozen_intent": {
-        "point": 0.10544234291648805,
-        "worst": 0.10544234291648805,
+        "point": 0.09634867013664294,
+        "worst": 0.09634867013664294,
         "measured_zero_fp": false
       },
       "extended_intent": {
-        "point": 0.7935047361299052,
-        "worst": 0.18377260334075027,
+        "point": 0.7381877428249154,
+        "worst": 0.1651432737060506,
         "measured_zero_fp": true
       },
       "learned_relation": {
-        "point": 0.6400244051250763,
-        "worst": 0.13502815768302495,
+        "point": 0.591888111888112,
+        "worst": 0.12148003559433936,
         "measured_zero_fp": true
       },
       "approval_bound": {
-        "point": 0.8926974664679583,
-        "worst": 0.22068711430413557,
+        "point": 0.8331015299026425,
+        "worst": 0.1979347377116894,
         "measured_zero_fp": true
       }
     },
     "999": {
       "frozen_intent": {
-        "point": 0.0121005104815324,
-        "worst": 0.0121005104815324,
+        "point": 0.01101014240051636,
+        "worst": 0.01101014240051636,
         "measured_zero_fp": false
       },
       "extended_intent": {
-        "point": 0.7935047361299052,
-        "worst": 0.023013315856190326,
+        "point": 0.7381877428249154,
+        "worst": 0.02049650967755406,
         "measured_zero_fp": true
       },
       "learned_relation": {
-        "point": 0.6400244051250763,
-        "worst": 0.016521311152672507,
+        "point": 0.591888111888112,
+        "worst": 0.014769471307370425,
         "measured_zero_fp": true
       },
       "approval_bound": {
-        "point": 0.8926974664679583,
-        "worst": 0.028136265955822776,
+        "point": 0.8331015299026425,
+        "worst": 0.024957033487839175,
         "measured_zero_fp": true
       }
     }
   },
   "latency_ms": {
-    "receipt_fetch_p50": 0.17475,
-    "receipt_fetch_p95": 0.194791,
-    "contract_p50": 0.037875,
-    "contract_p95": 0.047417
+    "receipt_fetch_p50": 0.182792,
+    "receipt_fetch_p95": 0.204833,
+    "contract_p50": 0.041915999999999995,
+    "contract_p95": 0.052041
   },
   "llm": {
     "rows": 1440,
