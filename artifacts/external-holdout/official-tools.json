@@ -1,0 +1,1944 @@
+[
+  {
+    "package": "@modelcontextprotocol/server-filesystem",
+    "server": "filesystem",
+    "server_info": {
+      "icons": null,
+      "name": "secure-filesystem-server",
+      "title": null,
+      "version": "0.2.0",
+      "websiteUrl": null
+    },
+    "source": "https://github.com/modelcontextprotocol/servers",
+    "tool_count": 14,
+    "tools": [
+      {
+        "annotations": {
+          "destructiveHint": null,
+          "idempotentHint": null,
+          "openWorldHint": false,
+          "readOnlyHint": true,
+          "title": null
+        },
+        "description": "Read the complete contents of a file as text. DEPRECATED: Use read_text_file instead.",
+        "execution": {
+          "taskSupport": "forbidden"
+        },
+        "icons": null,
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "properties": {
+            "head": {
+              "description": "If provided, returns only the first N lines of the file",
+              "type": "number"
+            },
+            "path": {
+              "type": "string"
+            },
+            "tail": {
+              "description": "If provided, returns only the last N lines of the file",
+              "type": "number"
+            }
+          },
+          "required": [
+            "path"
+          ],
+          "type": "object"
+        },
+        "meta": null,
+        "name": "read_file",
+        "outputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "additionalProperties": false,
+          "properties": {
+            "content": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "content"
+          ],
+          "type": "object"
+        },
+        "title": "Read File (Deprecated)"
+      },
+      {
+        "annotations": {
+          "destructiveHint": null,
+          "idempotentHint": null,
+          "openWorldHint": false,
+          "readOnlyHint": true,
+          "title": null
+        },
+        "description": "Read the complete contents of a file from the file system as text. Handles various text encodings and provides detailed error messages if the file cannot be read. Use this tool when you need to examine the contents of a single file. Use the 'head' parameter to read only the first N lines of a file, or the 'tail' parameter to read only the last N lines of a file. Operates on the file as text regardless of extension. Only works within allowed directories.",
+        "execution": {
+          "taskSupport": "forbidden"
+        },
+        "icons": null,
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "properties": {
+            "head": {
+              "description": "If provided, returns only the first N lines of the file",
+              "type": "number"
+            },
+            "path": {
+              "type": "string"
+            },
+            "tail": {
+              "description": "If provided, returns only the last N lines of the file",
+              "type": "number"
+            }
+          },
+          "required": [
+            "path"
+          ],
+          "type": "object"
+        },
+        "meta": null,
+        "name": "read_text_file",
+        "outputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "additionalProperties": false,
+          "properties": {
+            "content": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "content"
+          ],
+          "type": "object"
+        },
+        "title": "Read Text File"
+      },
+      {
+        "annotations": {
+          "destructiveHint": null,
+          "idempotentHint": null,
+          "openWorldHint": false,
+          "readOnlyHint": true,
+          "title": null
+        },
+        "description": "Read a file and return it as a base64-encoded content block with its MIME type. Image and audio files are returned as image/audio content; any other file type is returned as an embedded resource. Only works within allowed directories.",
+        "execution": {
+          "taskSupport": "forbidden"
+        },
+        "icons": null,
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "properties": {
+            "path": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "path"
+          ],
+          "type": "object"
+        },
+        "meta": null,
+        "name": "read_media_file",
+        "outputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "additionalProperties": false,
+          "properties": {
+            "content": {
+              "items": {
+                "anyOf": [
+                  {
+                    "additionalProperties": false,
+                    "properties": {
+                      "data": {
+                        "type": "string"
+                      },
+                      "mimeType": {
+                        "type": "string"
+                      },
+                      "type": {
+                        "enum": [
+                          "image",
+                          "audio"
+                        ],
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "type",
+                      "data",
+                      "mimeType"
+                    ],
+                    "type": "object"
+                  },
+                  {
+                    "additionalProperties": false,
+                    "properties": {
+                      "resource": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "blob": {
+                            "type": "string"
+                          },
+                          "mimeType": {
+                            "type": "string"
+                          },
+                          "uri": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "uri",
+                          "blob"
+                        ],
+                        "type": "object"
+                      },
+                      "type": {
+                        "const": "resource",
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "type",
+                      "resource"
+                    ],
+                    "type": "object"
+                  }
+                ]
+              },
+              "type": "array"
+            }
+          },
+          "required": [
+            "content"
+          ],
+          "type": "object"
+        },
+        "title": "Read Media File"
+      },
+      {
+        "annotations": {
+          "destructiveHint": null,
+          "idempotentHint": null,
+          "openWorldHint": false,
+          "readOnlyHint": true,
+          "title": null
+        },
+        "description": "Read the contents of multiple files simultaneously. This is more efficient than reading files one by one when you need to analyze or compare multiple files. Each file's content is returned with its path as a reference. Failed reads for individual files won't stop the entire operation. Only works within allowed directories.",
+        "execution": {
+          "taskSupport": "forbidden"
+        },
+        "icons": null,
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "properties": {
+            "paths": {
+              "description": "Array of file paths to read. Each path must be a string pointing to a valid file within allowed directories.",
+              "items": {
+                "type": "string"
+              },
+              "minItems": 1,
+              "type": "array"
+            }
+          },
+          "required": [
+            "paths"
+          ],
+          "type": "object"
+        },
+        "meta": null,
+        "name": "read_multiple_files",
+        "outputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "additionalProperties": false,
+          "properties": {
+            "content": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "content"
+          ],
+          "type": "object"
+        },
+        "title": "Read Multiple Files"
+      },
+      {
+        "annotations": {
+          "destructiveHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false,
+          "readOnlyHint": false,
+          "title": null
+        },
+        "description": "Create a new file or completely overwrite an existing file with new content. Use with caution as it will overwrite existing files without warning. Handles text content with proper encoding. Only works within allowed directories.",
+        "execution": {
+          "taskSupport": "forbidden"
+        },
+        "icons": null,
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "properties": {
+            "content": {
+              "type": "string"
+            },
+            "path": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "path",
+            "content"
+          ],
+          "type": "object"
+        },
+        "meta": null,
+        "name": "write_file",
+        "outputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "additionalProperties": false,
+          "properties": {
+            "content": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "content"
+          ],
+          "type": "object"
+        },
+        "title": "Write File"
+      },
+      {
+        "annotations": {
+          "destructiveHint": true,
+          "idempotentHint": false,
+          "openWorldHint": false,
+          "readOnlyHint": false,
+          "title": null
+        },
+        "description": "Make line-based edits to a text file. Each edit replaces exact line sequences with new content. Returns a git-style diff showing the changes made. Only works within allowed directories.",
+        "execution": {
+          "taskSupport": "forbidden"
+        },
+        "icons": null,
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "properties": {
+            "dryRun": {
+              "default": false,
+              "description": "Preview changes using git-style diff format",
+              "type": "boolean"
+            },
+            "edits": {
+              "items": {
+                "properties": {
+                  "newText": {
+                    "description": "Text to replace with",
+                    "type": "string"
+                  },
+                  "oldText": {
+                    "description": "Text to search for - must match exactly",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "oldText",
+                  "newText"
+                ],
+                "type": "object"
+              },
+              "type": "array"
+            },
+            "path": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "path",
+            "edits"
+          ],
+          "type": "object"
+        },
+        "meta": null,
+        "name": "edit_file",
+        "outputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "additionalProperties": false,
+          "properties": {
+            "content": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "content"
+          ],
+          "type": "object"
+        },
+        "title": "Edit File"
+      },
+      {
+        "annotations": {
+          "destructiveHint": false,
+          "idempotentHint": true,
+          "openWorldHint": false,
+          "readOnlyHint": false,
+          "title": null
+        },
+        "description": "Create a new directory or ensure a directory exists. Can create multiple nested directories in one operation. If the directory already exists, this operation will succeed silently. Perfect for setting up directory structures for projects or ensuring required paths exist. Only works within allowed directories.",
+        "execution": {
+          "taskSupport": "forbidden"
+        },
+        "icons": null,
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "properties": {
+            "path": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "path"
+          ],
+          "type": "object"
+        },
+        "meta": null,
+        "name": "create_directory",
+        "outputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "additionalProperties": false,
+          "properties": {
+            "content": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "content"
+          ],
+          "type": "object"
+        },
+        "title": "Create Directory"
+      },
+      {
+        "annotations": {
+          "destructiveHint": null,
+          "idempotentHint": null,
+          "openWorldHint": false,
+          "readOnlyHint": true,
+          "title": null
+        },
+        "description": "Get a detailed listing of all files and directories in a specified path. Results clearly distinguish between files and directories with [FILE] and [DIR] prefixes. This tool is essential for understanding directory structure and finding specific files within a directory. Only works within allowed directories.",
+        "execution": {
+          "taskSupport": "forbidden"
+        },
+        "icons": null,
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "properties": {
+            "path": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "path"
+          ],
+          "type": "object"
+        },
+        "meta": null,
+        "name": "list_directory",
+        "outputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "additionalProperties": false,
+          "properties": {
+            "content": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "content"
+          ],
+          "type": "object"
+        },
+        "title": "List Directory"
+      },
+      {
+        "annotations": {
+          "destructiveHint": null,
+          "idempotentHint": null,
+          "openWorldHint": false,
+          "readOnlyHint": true,
+          "title": null
+        },
+        "description": "Get a detailed listing of all files and directories in a specified path, including sizes. Results clearly distinguish between files and directories with [FILE] and [DIR] prefixes. This tool is useful for understanding directory structure and finding specific files within a directory. Only works within allowed directories.",
+        "execution": {
+          "taskSupport": "forbidden"
+        },
+        "icons": null,
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "properties": {
+            "path": {
+              "type": "string"
+            },
+            "sortBy": {
+              "default": "name",
+              "description": "Sort entries by name or size",
+              "enum": [
+                "name",
+                "size"
+              ],
+              "type": "string"
+            }
+          },
+          "required": [
+            "path"
+          ],
+          "type": "object"
+        },
+        "meta": null,
+        "name": "list_directory_with_sizes",
+        "outputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "additionalProperties": false,
+          "properties": {
+            "content": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "content"
+          ],
+          "type": "object"
+        },
+        "title": "List Directory with Sizes"
+      },
+      {
+        "annotations": {
+          "destructiveHint": null,
+          "idempotentHint": null,
+          "openWorldHint": false,
+          "readOnlyHint": true,
+          "title": null
+        },
+        "description": "Get a recursive tree view of files and directories as a JSON structure. Each entry includes 'name', 'type' (file/directory), and 'children' for directories. Files have no children array, while directories always have a children array (which may be empty). The output is formatted with 2-space indentation for readability. Only works within allowed directories.",
+        "execution": {
+          "taskSupport": "forbidden"
+        },
+        "icons": null,
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "properties": {
+            "excludePatterns": {
+              "default": [],
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "path": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "path"
+          ],
+          "type": "object"
+        },
+        "meta": null,
+        "name": "directory_tree",
+        "outputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "additionalProperties": false,
+          "properties": {
+            "content": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "content"
+          ],
+          "type": "object"
+        },
+        "title": "Directory Tree"
+      },
+      {
+        "annotations": {
+          "destructiveHint": true,
+          "idempotentHint": false,
+          "openWorldHint": false,
+          "readOnlyHint": false,
+          "title": null
+        },
+        "description": "Move or rename files and directories. Can move files between directories and rename them in a single operation. If the destination exists, the operation will fail. Works across different directories and can be used for simple renaming within the same directory. Both source and destination must be within allowed directories.",
+        "execution": {
+          "taskSupport": "forbidden"
+        },
+        "icons": null,
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "properties": {
+            "destination": {
+              "type": "string"
+            },
+            "source": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "source",
+            "destination"
+          ],
+          "type": "object"
+        },
+        "meta": null,
+        "name": "move_file",
+        "outputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "additionalProperties": false,
+          "properties": {
+            "content": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "content"
+          ],
+          "type": "object"
+        },
+        "title": "Move File"
+      },
+      {
+        "annotations": {
+          "destructiveHint": null,
+          "idempotentHint": null,
+          "openWorldHint": false,
+          "readOnlyHint": true,
+          "title": null
+        },
+        "description": "Recursively search for files and directories matching a pattern. The patterns should be glob-style patterns that match paths relative to the working directory. Use pattern like '*.ext' to match files in current directory, and '**/*.ext' to match files in all subdirectories. Returns full paths to all matching items. Great for finding files when you don't know their exact location. Only searches within allowed directories.",
+        "execution": {
+          "taskSupport": "forbidden"
+        },
+        "icons": null,
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "properties": {
+            "excludePatterns": {
+              "default": [],
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "path": {
+              "type": "string"
+            },
+            "pattern": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "path",
+            "pattern"
+          ],
+          "type": "object"
+        },
+        "meta": null,
+        "name": "search_files",
+        "outputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "additionalProperties": false,
+          "properties": {
+            "content": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "content"
+          ],
+          "type": "object"
+        },
+        "title": "Search Files"
+      },
+      {
+        "annotations": {
+          "destructiveHint": null,
+          "idempotentHint": null,
+          "openWorldHint": false,
+          "readOnlyHint": true,
+          "title": null
+        },
+        "description": "Retrieve detailed metadata about a file or directory. Returns comprehensive information including size, creation time, last modified time, permissions, and type. This tool is perfect for understanding file characteristics without reading the actual content. Only works within allowed directories.",
+        "execution": {
+          "taskSupport": "forbidden"
+        },
+        "icons": null,
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "properties": {
+            "path": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "path"
+          ],
+          "type": "object"
+        },
+        "meta": null,
+        "name": "get_file_info",
+        "outputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "additionalProperties": false,
+          "properties": {
+            "content": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "content"
+          ],
+          "type": "object"
+        },
+        "title": "Get File Info"
+      },
+      {
+        "annotations": {
+          "destructiveHint": null,
+          "idempotentHint": null,
+          "openWorldHint": false,
+          "readOnlyHint": true,
+          "title": null
+        },
+        "description": "Returns the list of directories that this server is allowed to access. Subdirectories within these allowed directories are also accessible. Use this to understand which directories and their nested paths are available before trying to access files.",
+        "execution": {
+          "taskSupport": "forbidden"
+        },
+        "icons": null,
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "properties": {},
+          "type": "object"
+        },
+        "meta": null,
+        "name": "list_allowed_directories",
+        "outputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "additionalProperties": false,
+          "properties": {
+            "content": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "content"
+          ],
+          "type": "object"
+        },
+        "title": "List Allowed Directories"
+      }
+    ],
+    "tools_sha256": "bb12be800776f4aa025b86020c490b44b477554fd51fd3be6bc288a8da03c293"
+  },
+  {
+    "package": "@modelcontextprotocol/server-memory",
+    "server": "memory",
+    "server_info": {
+      "icons": null,
+      "name": "memory-server",
+      "title": null,
+      "version": "0.6.3",
+      "websiteUrl": null
+    },
+    "source": "https://github.com/modelcontextprotocol/servers",
+    "tool_count": 9,
+    "tools": [
+      {
+        "annotations": {
+          "destructiveHint": false,
+          "idempotentHint": false,
+          "openWorldHint": false,
+          "readOnlyHint": false,
+          "title": null
+        },
+        "description": "Create multiple new entities in the knowledge graph",
+        "execution": {
+          "taskSupport": "forbidden"
+        },
+        "icons": null,
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "properties": {
+            "entities": {
+              "items": {
+                "properties": {
+                  "entityType": {
+                    "description": "The type of the entity",
+                    "type": "string"
+                  },
+                  "name": {
+                    "description": "The name of the entity",
+                    "type": "string"
+                  },
+                  "observations": {
+                    "description": "An array of observation contents associated with the entity",
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array"
+                  }
+                },
+                "required": [
+                  "name",
+                  "entityType",
+                  "observations"
+                ],
+                "type": "object"
+              },
+              "type": "array"
+            }
+          },
+          "required": [
+            "entities"
+          ],
+          "type": "object"
+        },
+        "meta": null,
+        "name": "create_entities",
+        "outputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "additionalProperties": false,
+          "properties": {
+            "entities": {
+              "items": {
+                "additionalProperties": false,
+                "properties": {
+                  "entityType": {
+                    "description": "The type of the entity",
+                    "type": "string"
+                  },
+                  "name": {
+                    "description": "The name of the entity",
+                    "type": "string"
+                  },
+                  "observations": {
+                    "description": "An array of observation contents associated with the entity",
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array"
+                  }
+                },
+                "required": [
+                  "name",
+                  "entityType",
+                  "observations"
+                ],
+                "type": "object"
+              },
+              "type": "array"
+            }
+          },
+          "required": [
+            "entities"
+          ],
+          "type": "object"
+        },
+        "title": "Create Entities"
+      },
+      {
+        "annotations": {
+          "destructiveHint": false,
+          "idempotentHint": false,
+          "openWorldHint": false,
+          "readOnlyHint": false,
+          "title": null
+        },
+        "description": "Create multiple new relations between entities in the knowledge graph. Relations should be in active voice",
+        "execution": {
+          "taskSupport": "forbidden"
+        },
+        "icons": null,
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "properties": {
+            "relations": {
+              "items": {
+                "properties": {
+                  "from": {
+                    "description": "The name of the entity where the relation starts",
+                    "type": "string"
+                  },
+                  "relationType": {
+                    "description": "The type of the relation",
+                    "type": "string"
+                  },
+                  "to": {
+                    "description": "The name of the entity where the relation ends",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "from",
+                  "to",
+                  "relationType"
+                ],
+                "type": "object"
+              },
+              "type": "array"
+            }
+          },
+          "required": [
+            "relations"
+          ],
+          "type": "object"
+        },
+        "meta": null,
+        "name": "create_relations",
+        "outputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "additionalProperties": false,
+          "properties": {
+            "relations": {
+              "items": {
+                "additionalProperties": false,
+                "properties": {
+                  "from": {
+                    "description": "The name of the entity where the relation starts",
+                    "type": "string"
+                  },
+                  "relationType": {
+                    "description": "The type of the relation",
+                    "type": "string"
+                  },
+                  "to": {
+                    "description": "The name of the entity where the relation ends",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "from",
+                  "to",
+                  "relationType"
+                ],
+                "type": "object"
+              },
+              "type": "array"
+            }
+          },
+          "required": [
+            "relations"
+          ],
+          "type": "object"
+        },
+        "title": "Create Relations"
+      },
+      {
+        "annotations": {
+          "destructiveHint": false,
+          "idempotentHint": false,
+          "openWorldHint": false,
+          "readOnlyHint": false,
+          "title": null
+        },
+        "description": "Add new observations to existing entities in the knowledge graph",
+        "execution": {
+          "taskSupport": "forbidden"
+        },
+        "icons": null,
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "properties": {
+            "observations": {
+              "items": {
+                "properties": {
+                  "contents": {
+                    "description": "An array of observation contents to add",
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array"
+                  },
+                  "entityName": {
+                    "description": "The name of the entity to add the observations to",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "entityName",
+                  "contents"
+                ],
+                "type": "object"
+              },
+              "type": "array"
+            }
+          },
+          "required": [
+            "observations"
+          ],
+          "type": "object"
+        },
+        "meta": null,
+        "name": "add_observations",
+        "outputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "additionalProperties": false,
+          "properties": {
+            "results": {
+              "items": {
+                "additionalProperties": false,
+                "properties": {
+                  "addedObservations": {
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array"
+                  },
+                  "entityName": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "entityName",
+                  "addedObservations"
+                ],
+                "type": "object"
+              },
+              "type": "array"
+            }
+          },
+          "required": [
+            "results"
+          ],
+          "type": "object"
+        },
+        "title": "Add Observations"
+      },
+      {
+        "annotations": {
+          "destructiveHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false,
+          "readOnlyHint": false,
+          "title": null
+        },
+        "description": "Delete multiple entities and their associated relations from the knowledge graph",
+        "execution": {
+          "taskSupport": "forbidden"
+        },
+        "icons": null,
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "properties": {
+            "entityNames": {
+              "description": "An array of entity names to delete",
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          },
+          "required": [
+            "entityNames"
+          ],
+          "type": "object"
+        },
+        "meta": null,
+        "name": "delete_entities",
+        "outputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "additionalProperties": false,
+          "properties": {
+            "message": {
+              "type": "string"
+            },
+            "success": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "success",
+            "message"
+          ],
+          "type": "object"
+        },
+        "title": "Delete Entities"
+      },
+      {
+        "annotations": {
+          "destructiveHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false,
+          "readOnlyHint": false,
+          "title": null
+        },
+        "description": "Delete specific observations from entities in the knowledge graph",
+        "execution": {
+          "taskSupport": "forbidden"
+        },
+        "icons": null,
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "properties": {
+            "deletions": {
+              "items": {
+                "properties": {
+                  "entityName": {
+                    "description": "The name of the entity containing the observations",
+                    "type": "string"
+                  },
+                  "observations": {
+                    "description": "An array of observations to delete",
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array"
+                  }
+                },
+                "required": [
+                  "entityName",
+                  "observations"
+                ],
+                "type": "object"
+              },
+              "type": "array"
+            }
+          },
+          "required": [
+            "deletions"
+          ],
+          "type": "object"
+        },
+        "meta": null,
+        "name": "delete_observations",
+        "outputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "additionalProperties": false,
+          "properties": {
+            "message": {
+              "type": "string"
+            },
+            "success": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "success",
+            "message"
+          ],
+          "type": "object"
+        },
+        "title": "Delete Observations"
+      },
+      {
+        "annotations": {
+          "destructiveHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false,
+          "readOnlyHint": false,
+          "title": null
+        },
+        "description": "Delete multiple relations from the knowledge graph",
+        "execution": {
+          "taskSupport": "forbidden"
+        },
+        "icons": null,
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "properties": {
+            "relations": {
+              "description": "An array of relations to delete",
+              "items": {
+                "properties": {
+                  "from": {
+                    "description": "The name of the entity where the relation starts",
+                    "type": "string"
+                  },
+                  "relationType": {
+                    "description": "The type of the relation",
+                    "type": "string"
+                  },
+                  "to": {
+                    "description": "The name of the entity where the relation ends",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "from",
+                  "to",
+                  "relationType"
+                ],
+                "type": "object"
+              },
+              "type": "array"
+            }
+          },
+          "required": [
+            "relations"
+          ],
+          "type": "object"
+        },
+        "meta": null,
+        "name": "delete_relations",
+        "outputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "additionalProperties": false,
+          "properties": {
+            "message": {
+              "type": "string"
+            },
+            "success": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "success",
+            "message"
+          ],
+          "type": "object"
+        },
+        "title": "Delete Relations"
+      },
+      {
+        "annotations": {
+          "destructiveHint": false,
+          "idempotentHint": true,
+          "openWorldHint": false,
+          "readOnlyHint": true,
+          "title": null
+        },
+        "description": "Read the entire knowledge graph",
+        "execution": {
+          "taskSupport": "forbidden"
+        },
+        "icons": null,
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "properties": {},
+          "type": "object"
+        },
+        "meta": null,
+        "name": "read_graph",
+        "outputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "additionalProperties": false,
+          "properties": {
+            "entities": {
+              "items": {
+                "additionalProperties": false,
+                "properties": {
+                  "entityType": {
+                    "description": "The type of the entity",
+                    "type": "string"
+                  },
+                  "name": {
+                    "description": "The name of the entity",
+                    "type": "string"
+                  },
+                  "observations": {
+                    "description": "An array of observation contents associated with the entity",
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array"
+                  }
+                },
+                "required": [
+                  "name",
+                  "entityType",
+                  "observations"
+                ],
+                "type": "object"
+              },
+              "type": "array"
+            },
+            "relations": {
+              "items": {
+                "additionalProperties": false,
+                "properties": {
+                  "from": {
+                    "description": "The name of the entity where the relation starts",
+                    "type": "string"
+                  },
+                  "relationType": {
+                    "description": "The type of the relation",
+                    "type": "string"
+                  },
+                  "to": {
+                    "description": "The name of the entity where the relation ends",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "from",
+                  "to",
+                  "relationType"
+                ],
+                "type": "object"
+              },
+              "type": "array"
+            }
+          },
+          "required": [
+            "entities",
+            "relations"
+          ],
+          "type": "object"
+        },
+        "title": "Read Graph"
+      },
+      {
+        "annotations": {
+          "destructiveHint": false,
+          "idempotentHint": true,
+          "openWorldHint": false,
+          "readOnlyHint": true,
+          "title": null
+        },
+        "description": "Search for nodes in the knowledge graph based on a query",
+        "execution": {
+          "taskSupport": "forbidden"
+        },
+        "icons": null,
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "properties": {
+            "query": {
+              "description": "The search query to match against entity names, types, and observation content",
+              "type": "string"
+            }
+          },
+          "required": [
+            "query"
+          ],
+          "type": "object"
+        },
+        "meta": null,
+        "name": "search_nodes",
+        "outputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "additionalProperties": false,
+          "properties": {
+            "entities": {
+              "items": {
+                "additionalProperties": false,
+                "properties": {
+                  "entityType": {
+                    "description": "The type of the entity",
+                    "type": "string"
+                  },
+                  "name": {
+                    "description": "The name of the entity",
+                    "type": "string"
+                  },
+                  "observations": {
+                    "description": "An array of observation contents associated with the entity",
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array"
+                  }
+                },
+                "required": [
+                  "name",
+                  "entityType",
+                  "observations"
+                ],
+                "type": "object"
+              },
+              "type": "array"
+            },
+            "relations": {
+              "items": {
+                "additionalProperties": false,
+                "properties": {
+                  "from": {
+                    "description": "The name of the entity where the relation starts",
+                    "type": "string"
+                  },
+                  "relationType": {
+                    "description": "The type of the relation",
+                    "type": "string"
+                  },
+                  "to": {
+                    "description": "The name of the entity where the relation ends",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "from",
+                  "to",
+                  "relationType"
+                ],
+                "type": "object"
+              },
+              "type": "array"
+            }
+          },
+          "required": [
+            "entities",
+            "relations"
+          ],
+          "type": "object"
+        },
+        "title": "Search Nodes"
+      },
+      {
+        "annotations": {
+          "destructiveHint": false,
+          "idempotentHint": true,
+          "openWorldHint": false,
+          "readOnlyHint": true,
+          "title": null
+        },
+        "description": "Open specific nodes in the knowledge graph by their names",
+        "execution": {
+          "taskSupport": "forbidden"
+        },
+        "icons": null,
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "properties": {
+            "names": {
+              "description": "An array of entity names to retrieve",
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          },
+          "required": [
+            "names"
+          ],
+          "type": "object"
+        },
+        "meta": null,
+        "name": "open_nodes",
+        "outputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "additionalProperties": false,
+          "properties": {
+            "entities": {
+              "items": {
+                "additionalProperties": false,
+                "properties": {
+                  "entityType": {
+                    "description": "The type of the entity",
+                    "type": "string"
+                  },
+                  "name": {
+                    "description": "The name of the entity",
+                    "type": "string"
+                  },
+                  "observations": {
+                    "description": "An array of observation contents associated with the entity",
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array"
+                  }
+                },
+                "required": [
+                  "name",
+                  "entityType",
+                  "observations"
+                ],
+                "type": "object"
+              },
+              "type": "array"
+            },
+            "relations": {
+              "items": {
+                "additionalProperties": false,
+                "properties": {
+                  "from": {
+                    "description": "The name of the entity where the relation starts",
+                    "type": "string"
+                  },
+                  "relationType": {
+                    "description": "The type of the relation",
+                    "type": "string"
+                  },
+                  "to": {
+                    "description": "The name of the entity where the relation ends",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "from",
+                  "to",
+                  "relationType"
+                ],
+                "type": "object"
+              },
+              "type": "array"
+            }
+          },
+          "required": [
+            "entities",
+            "relations"
+          ],
+          "type": "object"
+        },
+        "title": "Open Nodes"
+      }
+    ],
+    "tools_sha256": "8e1b7cbc3fb04d984d91ba5ccce30da4300f271d485fef642d9d4e1b7e83e972"
+  },
+  {
+    "package": "@modelcontextprotocol/server-everything",
+    "server": "everything",
+    "server_info": {
+      "icons": null,
+      "name": "mcp-servers/everything",
+      "title": "Everything Reference Server",
+      "version": "2.0.0",
+      "websiteUrl": null
+    },
+    "source": "https://github.com/modelcontextprotocol/servers",
+    "tool_count": 13,
+    "tools": [
+      {
+        "annotations": {
+          "destructiveHint": false,
+          "idempotentHint": true,
+          "openWorldHint": false,
+          "readOnlyHint": true,
+          "title": null
+        },
+        "description": "Echoes back the input string",
+        "execution": {
+          "taskSupport": "forbidden"
+        },
+        "icons": null,
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "properties": {
+            "message": {
+              "description": "Message to echo",
+              "type": "string"
+            }
+          },
+          "required": [
+            "message"
+          ],
+          "type": "object"
+        },
+        "meta": null,
+        "name": "echo",
+        "outputSchema": null,
+        "title": "Echo Tool"
+      },
+      {
+        "annotations": {
+          "destructiveHint": false,
+          "idempotentHint": true,
+          "openWorldHint": false,
+          "readOnlyHint": true,
+          "title": null
+        },
+        "description": "Demonstrates how annotations can be used to provide metadata about content.",
+        "execution": {
+          "taskSupport": "forbidden"
+        },
+        "icons": null,
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "properties": {
+            "includeImage": {
+              "default": false,
+              "description": "Whether to include an example image",
+              "type": "boolean"
+            },
+            "messageType": {
+              "description": "Type of message to demonstrate different annotation patterns",
+              "enum": [
+                "error",
+                "success",
+                "debug"
+              ],
+              "type": "string"
+            }
+          },
+          "required": [
+            "messageType"
+          ],
+          "type": "object"
+        },
+        "meta": null,
+        "name": "get-annotated-message",
+        "outputSchema": null,
+        "title": "Get Annotated Message Tool"
+      },
+      {
+        "annotations": {
+          "destructiveHint": false,
+          "idempotentHint": true,
+          "openWorldHint": false,
+          "readOnlyHint": true,
+          "title": null
+        },
+        "description": "Returns all environment variables, helpful for debugging MCP server configuration",
+        "execution": {
+          "taskSupport": "forbidden"
+        },
+        "icons": null,
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "properties": {},
+          "type": "object"
+        },
+        "meta": null,
+        "name": "get-env",
+        "outputSchema": null,
+        "title": "Print Environment Tool"
+      },
+      {
+        "annotations": {
+          "destructiveHint": false,
+          "idempotentHint": true,
+          "openWorldHint": false,
+          "readOnlyHint": true,
+          "title": null
+        },
+        "description": "Returns up to ten resource links that reference different types of resources",
+        "execution": {
+          "taskSupport": "forbidden"
+        },
+        "icons": null,
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "properties": {
+            "count": {
+              "default": 3,
+              "description": "Number of resource links to return (1-10)",
+              "maximum": 10,
+              "minimum": 1,
+              "type": "number"
+            }
+          },
+          "type": "object"
+        },
+        "meta": null,
+        "name": "get-resource-links",
+        "outputSchema": null,
+        "title": "Get Resource Links Tool"
+      },
+      {
+        "annotations": {
+          "destructiveHint": false,
+          "idempotentHint": true,
+          "openWorldHint": false,
+          "readOnlyHint": true,
+          "title": null
+        },
+        "description": "Returns a resource reference that can be used by MCP clients",
+        "execution": {
+          "taskSupport": "forbidden"
+        },
+        "icons": null,
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "properties": {
+            "resourceId": {
+              "default": 1,
+              "description": "ID of the text resource to fetch",
+              "type": "number"
+            },
+            "resourceType": {
+              "default": "Text",
+              "enum": [
+                "Text",
+                "Blob"
+              ],
+              "type": "string"
+            }
+          },
+          "type": "object"
+        },
+        "meta": null,
+        "name": "get-resource-reference",
+        "outputSchema": null,
+        "title": "Get Resource Reference Tool"
+      },
+      {
+        "annotations": {
+          "destructiveHint": false,
+          "idempotentHint": true,
+          "openWorldHint": false,
+          "readOnlyHint": true,
+          "title": null
+        },
+        "description": "Returns structured content along with an output schema for client data validation",
+        "execution": {
+          "taskSupport": "forbidden"
+        },
+        "icons": null,
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "properties": {
+            "location": {
+              "description": "Choose city",
+              "enum": [
+                "New York",
+                "Chicago",
+                "Los Angeles"
+              ],
+              "type": "string"
+            }
+          },
+          "required": [
+            "location"
+          ],
+          "type": "object"
+        },
+        "meta": null,
+        "name": "get-structured-content",
+        "outputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "additionalProperties": false,
+          "properties": {
+            "conditions": {
+              "description": "Weather conditions description",
+              "type": "string"
+            },
+            "humidity": {
+              "description": "Humidity percentage",
+              "type": "number"
+            },
+            "temperature": {
+              "description": "Temperature in celsius",
+              "type": "number"
+            }
+          },
+          "required": [
+            "temperature",
+            "conditions",
+            "humidity"
+          ],
+          "type": "object"
+        },
+        "title": "Get Structured Content Tool"
+      },
+      {
+        "annotations": {
+          "destructiveHint": false,
+          "idempotentHint": true,
+          "openWorldHint": false,
+          "readOnlyHint": true,
+          "title": null
+        },
+        "description": "Returns the sum of two numbers",
+        "execution": {
+          "taskSupport": "forbidden"
+        },
+        "icons": null,
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "properties": {
+            "a": {
+              "description": "First number",
+              "type": "number"
+            },
+            "b": {
+              "description": "Second number",
+              "type": "number"
+            }
+          },
+          "required": [
+            "a",
+            "b"
+          ],
+          "type": "object"
+        },
+        "meta": null,
+        "name": "get-sum",
+        "outputSchema": null,
+        "title": "Get Sum Tool"
+      },
+      {
+        "annotations": {
+          "destructiveHint": false,
+          "idempotentHint": true,
+          "openWorldHint": false,
+          "readOnlyHint": true,
+          "title": null
+        },
+        "description": "Returns a tiny MCP logo image.",
+        "execution": {
+          "taskSupport": "forbidden"
+        },
+        "icons": null,
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "properties": {},
+          "type": "object"
+        },
+        "meta": null,
+        "name": "get-tiny-image",
+        "outputSchema": null,
+        "title": "Get Tiny Image Tool"
+      },
+      {
+        "annotations": {
+          "destructiveHint": false,
+          "idempotentHint": true,
+          "openWorldHint": true,
+          "readOnlyHint": false,
+          "title": null
+        },
+        "description": "Compresses a single file using gzip compression. Depending upon the selected output type, returns either the compressed data as a gzipped resource or a resource link, allowing it to be downloaded in a subsequent request during the current session.",
+        "execution": {
+          "taskSupport": "forbidden"
+        },
+        "icons": null,
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "properties": {
+            "data": {
+              "default": "https://raw.githubusercontent.com/modelcontextprotocol/servers/refs/heads/main/README.md",
+              "description": "URL or data URI of the file content to compress",
+              "format": "uri",
+              "type": "string"
+            },
+            "name": {
+              "default": "README.md.gz",
+              "description": "Name of the output file",
+              "type": "string"
+            },
+            "outputType": {
+              "default": "resourceLink",
+              "description": "How the resulting gzipped file should be returned. 'resourceLink' returns a link to a resource that can be read later, 'resource' returns a full resource object.",
+              "enum": [
+                "resourceLink",
+                "resource"
+              ],
+              "type": "string"
+            }
+          },
+          "type": "object"
+        },
+        "meta": null,
+        "name": "gzip-file-as-resource",
+        "outputSchema": null,
+        "title": "GZip File as Resource Tool"
+      },
+      {
+        "annotations": {
+          "destructiveHint": false,
+          "idempotentHint": false,
+          "openWorldHint": false,
+          "readOnlyHint": false,
+          "title": null
+        },
+        "description": "Toggles simulated, random-leveled logging on or off.",
+        "execution": {
+          "taskSupport": "forbidden"
+        },
+        "icons": null,
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "properties": {},
+          "type": "object"
+        },
+        "meta": null,
+        "name": "toggle-simulated-logging",
+        "outputSchema": null,
+        "title": "Toggle Simulated Logging"
+      },
+      {
+        "annotations": {
+          "destructiveHint": false,
+          "idempotentHint": false,
+          "openWorldHint": false,
+          "readOnlyHint": false,
+          "title": null
+        },
+        "description": "Toggles simulated resource subscription updates on or off.",
+        "execution": {
+          "taskSupport": "forbidden"
+        },
+        "icons": null,
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "properties": {},
+          "type": "object"
+        },
+        "meta": null,
+        "name": "toggle-subscriber-updates",
+        "outputSchema": null,
+        "title": "Toggle Subscriber Updates"
+      },
+      {
+        "annotations": {
+          "destructiveHint": false,
+          "idempotentHint": true,
+          "openWorldHint": false,
+          "readOnlyHint": true,
+          "title": null
+        },
+        "description": "Demonstrates a long running operation with progress updates.",
+        "execution": {
+          "taskSupport": "forbidden"
+        },
+        "icons": null,
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "properties": {
+            "duration": {
+              "default": 10,
+              "description": "Duration of the operation in seconds",
+              "type": "number"
+            },
+            "steps": {
+              "default": 5,
+              "description": "Number of steps in the operation",
+              "type": "number"
+            }
+          },
+          "type": "object"
+        },
+        "meta": null,
+        "name": "trigger-long-running-operation",
+        "outputSchema": null,
+        "title": "Trigger Long Running Operation Tool"
+      },
+      {
+        "annotations": {
+          "destructiveHint": false,
+          "idempotentHint": false,
+          "openWorldHint": false,
+          "readOnlyHint": false,
+          "title": null
+        },
+        "description": "Simulates a deep research operation that gathers, analyzes, and synthesizes information. Demonstrates MCP task-based operations with progress through multiple stages. If 'ambiguous' is true and client supports elicitation, sends an elicitation request for clarification.",
+        "execution": {
+          "taskSupport": "required"
+        },
+        "icons": null,
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "properties": {
+            "ambiguous": {
+              "default": false,
+              "description": "Simulate an ambiguous query that requires clarification (triggers input_required status)",
+              "type": "boolean"
+            },
+            "topic": {
+              "description": "The research topic to investigate",
+              "type": "string"
+            }
+          },
+          "required": [
+            "topic"
+          ],
+          "type": "object"
+        },
+        "meta": null,
+        "name": "simulate-research-query",
+        "outputSchema": null,
+        "title": "Simulate Research Query"
+      }
+    ],
+    "tools_sha256": "c5f9c69ec280649d985e822b1b248b9a7b06e71a3709b4251fcd32df9e8c96d6"
+  }
+]

@@ -48,10 +48,69 @@ styles.add(ParagraphStyle(name="PaperTiny", fontName="K", fontSize=6.7, leading=
 
 
 def P(text: str, style: str = "Ko") -> Paragraph:
+    # Final-paper corrections are applied here so the hand-balanced three-page
+    # canvas keeps its geometry while the claims follow the frozen analyses.
+    replacements = {
+        "정상 응답으로 은폐된 MCP 도구 외부 효과 변조와<br/>독립 관찰 기반 의미 계약 검증": "MCP 외부효과 변조에 대한 동결 의미계약의<br/>탐지 경계 측정",
+        "연구를 규정하는 세 질문": "연구 본질과 기여",
+        "후속 실험": "동결 계약의 일반화 경계",
+        "후속 평가 행렬": "공격 계열별 외부-schema hold-out",
+        "분류: 인공지능 보안 / 양자내성암호": "독립 observer의 성립 조건",
+    }
+    text = replacements.get(text, text)
+    if text.startswith("MCP 서버가 tools/list와 반환 JSON을 정상으로 유지하면서"):
+        text = ("1,008개 의미 조건에서 manifest와 응답을 유지한 외부효과 변조를 측정하고, "
+                "공식 MCP schema 동결 hold-out과 센서 양성대조군 5,400회를 추가했다. 동결 계약은 직접 필드·개수·종류 변조에는 유효했지만 "
+                "미지 간접참조 공격 Recall은 사실상 0이었다. 정상 실행에서 학습한 값 관계와 hold-out F1 0.878이 같았고, 공격:정상=1:999에서 "
+                "v1/v2 F1은 0.724/0.264였다. 결론적으로 값-의미 계약은 직접 변조 센서이지 일반 행동 증명이 아니며 observer 독립성·FPR·지연이 배치를 결정한다.")
+    elif text.startswith("(1) schema alias 실패는 v2 completeness"):
+        text = ("v1은 필수 필드 누락 시 비교가 생략되어 미탐했고 v2 completeness는 FN을 줄이는 대신 FP를 늘렸다. 외부-schema hold-out에서 "
+                "learned relation과 frozen contract는 Recall 0.787, F1 0.878로 동률이었다. 알려진 직접 변조 4계열은 약 0.98이지만 계약에 없는 "
+                "indirect-reference는 직접 receipt 필드를 보존한 채 resolved target만 바꾸어 사실상 탐지되지 않았다. 따라서 aggregate F1은 일반화 증거가 아니라 "
+                "4계열 탐지·1계열 실패의 요약이며 미지 계열 n=1의 한계를 갖는다.")
+    elif text.startswith("모델 계열 편중, 합성 도구·공격"):
+        text = ("공격·계약 공동설계, 합성 도구, 비독립 반복, 미지 공격계열 n=1이 타당성을 제한한다. 10개 모델은 agent-loop 호환성을 보일 뿐 "
+                "증거를 10배로 만들지 않는다. 센서 양성대조 5,400회에서 manifest/response/attestation Recall 0.125, trajectory 0.250, learned 0.375, frozen 0.500을 "
+                "확인했으므로 본 위협에서 0은 미구현이 아니라 고정된 관측면의 결과다. 완전 blind 평가는 제3자 작성 도구·공격·계약이 필요하다.")
+    elif text.startswith("byte-identical manifest와 정상 응답 아래에서도"):
+        text = ("동결 값-의미 계약은 직접 필드·효과 종류·개수 변조에는 유효하지만 간접참조에는 구조적으로 무력했다. 정상값 관계 baseline과의 동률은 "
+                "수작업 계약의 탐지 이득이 schema completeness와 감사 가능성에 한정됨을 보였다. 저유병률에서는 FPR이 F1보다 배치를 결정한다. 후속 연구는 "
+                "제3자 작성 공격 다계열과 독립 provider receipt에서 이 경계를 재측정해야 한다.")
+    elif text.startswith("테스트 tenant에서 OAuth scope를 최소화하고"):
+        text = ("공식 외부 schema를 결과 확인 전에 동결한 10,080회에서 frozen contract와 learned relation은 동일한 F1 0.878을 보였다. "
+                "Trajectory-lite는 본 corpus 0에서 hold-out 0.59로 상승했는데, 이는 hold-out에 kind/cardinality 변조가 포함된 corpus 차이이다. "
+                "수작업 계약의 별도 이점은 schema-incomplete 양성대조 600건과 정책을 감사 가능한 명세로 남기는 데 있으며 행동 일반화는 아니다.")
+    elif text.startswith("실무 적용은 저위험 도구의 shadow logging"):
+        text = ("계열별 Recall은 effect-type 0.984, hidden-duplication 0.984, scope-expansion 0.983, target-substitution 0.983이었으나 "
+                "indirect-reference-resolution은 약 0이었다. 따라서 집계 F1보다 계열별 실패를 우선 보고하며, 미지 계열 하나만으로 성공·실패 방향의 일반화를 주장하지 않는다.")
+    elif text.startswith("핵심 자산은 LLM 에이전트가 호출한 도구의 실제 외부 효과"):
+        text = ("observer는 MCP 서버와 관리자·키·저장소가 분리되고, 호출자가 검증하는 tenant-bound provider 서명 또는 다중 출처·투명성 로그가 있을 때만 독립이다. "
+                "서버가 직접 쓰는 SQLite/응답, 동일 관리자·키, 공격자가 downstream까지 단독 통제하는 배치에서는 receipt가 두 번째 자기보고일 뿐이다. "
+                "본 로컬 SQLite는 프로세스 분리를 재현했을 뿐 상용 SaaS 독립성을 증명하지 않는다.")
+    elif text.startswith("정적 기준의 완전 실패와 외부 observer의 추가 신호"):
+        text = ("Utility 감소 0p는 차단 없는 사후탐지 구성에서 자명하므로 판정 보류다. 계약 계산 p95는 0.036ms이나 receipt 종단 p95 301.7ms로 200ms 게이트는 실패했다. "
+                "hold-out F1 0.8784는 수치 기준을 충족하나 미지 계열 n=1이라는 단서를 유지한다.")
+    elif text.startswith("[1] Model Context Protocol, Security Best Practices"):
+        text = ('[1] Model Context Protocol, “Tools; Security Best Practices,” 2026.<br/>'
+                '[2] Z. Li et al., “Confused Deputy Attack Against Model Context Protocol,” ACM TOSEM, doi:10.1145/3830467, 2026.<br/>'
+                '[3] Z. Wang et al., “MCPTox,” AAAI 40(42), 35811-35819, 2026.<br/>'
+                '[4] S. Yergattikar, “Securing the Tool Layer: A Threat Taxonomy and Runtime Defense Framework for Model Context Protocol Deployments,” ACL Industry, 2026.<br/>'
+                '[5] Huang et al., “From Component Manipulation to System Compromise: Understanding and Detecting Malicious MCP Servers,” arXiv:2604.01905, 2026.<br/>'
+                '[6] Z. Wang, “CAVA: Canonical Action Verification and Attestation for Runtime Governance of Agentic AI Systems,” arXiv:2607.13716, 2026.<br/>'
+                '[7] Y. Shi et al., “Description-Code Inconsistency in Real-world MCP Servers,” arXiv:2606.04769, 2026.<br/>'
+                '[8] 김찬형·이브라히모바 나일라 외, “MCP 기반 AI 에이전트 환경에서의 LLM 보안 위협 변화 동향 분석,” ASK, p.375, 2026.<br/>'
+                '[9] 남장우 외, “공개된 MCP 취약점 교차매핑 기반 공격사례 분석,” ASK, p.251, 2026.<br/>'
+                '[10] 김도영·고남현 외, “VAT 기반 LLM 에이전트 하이브리드 보안 아키텍처,” ASK, p.310, 2026.<br/>'
+                '[11] 한승완·강승호, “Agent-SecSLA 프레임워크,” 융합보안논문지 26(3), 99-112, 2026.<br/>'
+                '[12] 이재승·유제혁, “SBOM 변경 이력 자동 분석 기법,” 한국산업정보학회논문지 30(4), 39-60, 2025.')
     return Paragraph(text, styles[style])
 
 
 def table(data, widths, tiny=False, repeat=1):
+    if data and data[0] == ["주입 변수", "측정"]:
+        data = [["공격 계열", "Frozen Recall"], ["effect type", "0.984"], ["hidden duplication", "0.984"], ["scope expansion", "0.983"], ["target substitution", "0.983"], ["indirect reference", "≈0.000"]]
+    elif data and data[0] == ["축", "Go 기준", "관측"]:
+        data = [["축", "기준", "관측/판정"], ["F1/Recall/FPR", ".85/.90/.05", ".998/.996/.001 통과"], ["Utility", "감소≤.05p", "판정 보류"], ["p95", "≤200ms", "301.7ms 실패"], ["hold-out F1", "≥.75", ".878, n=1 한계"]]
     style = "TinyK" if tiny else "SmallK"
     t = Table([[P(str(x), style) for x in row] for row in data], colWidths=widths, repeatRows=repeat)
     t.setStyle(TableStyle([

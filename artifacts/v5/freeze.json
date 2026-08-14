@@ -2,5 +2,12 @@
   "manifest_sha256": "84391be81e932cae0f8d92be8c533fc779ac994b6dfb4c5553a0009e2f68d260",
   "contract_sha256": "5aa627d08c1432889f48dd7a11ca78659f7cad24c799f171eebca240643a11c0",
   "learned_profile_sha256": "877b4ed087fd69b822a71eabe603a454eb45ff2b3ae0918af49f100c92891d45",
+  "provider_pubkey_ed25519": "b99b7ca26cd243c44a8543cfe72af6ac0d5a535f3a2e08dcefb5ff23676baf3c",
+  "publisher_pubkey_ed25519": "7e40d17b3632ad0210b4d30f5c02a8e878598a94fa4f76bf7f211517af9cceab",
+  "drift": {
+    "kind": "none"
+  },
+  "tool_table_source": "builtin",
+  "tool_table_sha256": "90a2ecb1bc93a8844a8361cdea9c7e67704b601b4dd0860162d2e2117faaf5e2",
   "frozen_before": "evaluation matrix"
 }

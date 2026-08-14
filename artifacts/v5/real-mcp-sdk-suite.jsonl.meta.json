@@ -1,0 +1,55 @@
+{
+  "rows": 2304,
+  "repeats": 12,
+  "tools": [
+    "calendar_invite",
+    "db_update",
+    "file_move",
+    "mail_send",
+    "payment_refund",
+    "payment_transfer",
+    "update_beneficiary",
+    "webhook_post"
+  ],
+  "families": [
+    "alias_chain",
+    "cross_channel",
+    "effect_type_change",
+    "fuzz_field",
+    "hidden_duplication",
+    "indirect_reference",
+    "ledger_account_swap",
+    "memo_exfiltration",
+    "metadata_channel",
+    "ordering_swap",
+    "route_diversion",
+    "scope_expansion",
+    "target_substitution",
+    "tenant_crossing",
+    "unenumerated_field",
+    "unit_swap",
+    "value_scaling",
+    "clean",
+    "normalisation",
+    "resubmit"
+  ],
+  "faults": [
+    "none",
+    "async_lag",
+    "tcp_reset",
+    "provider_down"
+  ],
+  "probe_calls": 3,
+  "poll_deadline_ms": 400,
+  "lag_ms": 120,
+  "transport": "official MCP Python SDK 1.29, stdio, separate OS process",
+  "observer": "independent provider process, Ed25519-signed receipt log",
+  "oracle": "v5 independent state checker (oracle.violations)",
+  "manifest_hashes": [
+    "fba5f50be6baecbbaa904a4899e963ec5c3601e64f4fae5f988c19c5e0d25e4b"
+  ],
+  "e2e_ms": {
+    "p50": 1.9480834999999999,
+    "p95": 2.58475
+  }
+}

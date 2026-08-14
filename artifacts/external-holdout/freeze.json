@@ -1,0 +1,28 @@
+{
+  "frozen_at": "2026-08-14T08:18:00+09:00",
+  "status": "Frozen before external-holdout outcomes were analyzed",
+  "source_repository": "https://github.com/modelcontextprotocol/servers",
+  "selected_tools": 6,
+  "selected_tools_sha256": "53b09b8d3cae7fbab35210115632abe48c93bc367a2bdf9532fd95f2610538cd",
+  "contract_sha256": "c13e6bcac59dff882bf6edaa8d15db7dc2a089dc2b03047621f23443bc287797",
+  "packages": {
+    "@modelcontextprotocol/server-filesystem": {
+      "npm_version": "2026.7.10",
+      "server_reported_version": "0.2.0",
+      "dist_integrity": "sha512-Mmjg4anFBD5OzbPnGJOA0jPPN8645ERhQk38HQLpSenx1ox9bfdPkmAzUnNjeQtqQGFLtKe13J20RtLBmUKMZA=="
+    },
+    "@modelcontextprotocol/server-memory": {
+      "npm_version": "2026.7.4",
+      "server_reported_version": "0.6.3",
+      "dist_integrity": "sha512-D+NNzChsOHN72y58ngDmO+TzjJijGi/sSY/gBydhB3TJCcm1XQEozVWwEpruHeXt/HSkMV3Z/BpHDhdt1MLD5w=="
+    },
+    "@modelcontextprotocol/server-everything": {
+      "npm_version": "2026.7.4",
+      "server_reported_version": "2.0.0",
+      "dist_integrity": "sha512-ydMW/M6rk9tK23b+U38trsNLHhd5eF+ntiv2Vr+RPMDhbiKY/IKrZU25ukvSXVPUBvy7TxTPWpeV4KcYcXg72w=="
+    }
+  },
+  "unseen_attack": "indirect_reference_resolution",
+  "normal_migrations": ["description_only", "property_reorder", "add_optional", "relax_constraint", "output_schema"],
+  "claim_boundary": "Official schemas and benign implementations are externally authored. Attack injection and contracts remain author-created; this is an external-schema holdout, not an independent third-party attack benchmark."
+}

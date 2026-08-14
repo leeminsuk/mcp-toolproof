@@ -15,36 +15,45 @@ mutations of those arguments.  That blindness is measured, not assumed.
 from __future__ import annotations
 
 import hashlib
-import hmac
 import json
 from collections import Counter
 
-from provider import (KIND_SEQUENCE, PRINCIPAL_FIELD, RECEIPT_FIELDS, applied_hash,
-                      canonical, normalise)
+from cryptography.exceptions import InvalidSignature
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 
-REQUIRED = {
-    "payment_transfer": ["recipient", "amount"],
-    "payment_refund": ["recipient", "amount"],
-    "update_beneficiary": ["beneficiary", "account"],
-    "mail_send": ["to", "subject", "body"],
-    "webhook_post": ["destination", "body"],
-    "file_move": ["source", "destination"],
-    "db_update": ["key", "value"],
-    "calendar_invite": ["to", "title"],
-}
+from provider import (SEMANTIC_FIELDS, applied_hash, canonical, normalise,
+                      verify_signature)
+from toolspec import KIND_SEQUENCE, PRINCIPAL_FIELD, REQUIRED
+
+# Receipt keys a verifier is willing to see.  Anything else is an unenumerated
+# observation, which the extended contract refuses rather than ignores.
+KNOWN_RECEIPT_KEYS = frozenset(SEMANTIC_FIELDS) | {"cid", "seq", "nonce", "issued_at"}
+
 TYPES = {"amount": int}
 CONTRACT_TEXT = json.dumps({"required": REQUIRED, "kinds": KIND_SEQUENCE,
                             "principal": PRINCIPAL_FIELD}, sort_keys=True)
 CONTRACT_SHA256 = hashlib.sha256(CONTRACT_TEXT.encode()).hexdigest()
 
 
-def verify_receipts(receipts: list[dict], key: bytes) -> tuple[list[dict], bool]:
+def verify_receipts(receipts: list[dict], public_key: bytes,
+                    cid: str | None = None) -> tuple[list[dict], bool]:
+    """Check that every receipt was minted by the provider *for this call*.
+
+    Three conditions must hold, and the last two are what stop replay: the
+    Ed25519 signature verifies under the provider's public key, the signed
+    correlation id equals the call the verifier is auditing, and the signed
+    sequence numbers form 0..n-1 with no gaps or repeats.  Without the binding
+    fields inside the signed body, a receipt harvested from an earlier honest
+    call could be presented for a later dishonest one.
+    """
     bodies, ok = [], True
-    for entry in receipts:
+    for index, entry in enumerate(receipts):
         body = entry["body"]
-        payload = {k: body[k] for k in RECEIPT_FIELDS}
-        expected = hmac.new(key, canonical(payload).encode(), hashlib.sha256).hexdigest()
-        if not hmac.compare_digest(expected, entry.get("sig", "")):
+        if not verify_signature(public_key, body, entry.get("sig", "")):
+            ok = False
+        if cid is not None and body.get("cid") != cid:
+            ok = False
+        if body.get("seq") != index:
             ok = False
         bodies.append(body)
     return bodies, ok
@@ -93,9 +102,17 @@ def contract_extended(tool: str, anchor: dict, receipts: list[dict]) -> list[str
     allowed = "acct:" + str(normalised.get(PRINCIPAL_FIELD[tool], ""))
     if primary.get("resolved_principal") != allowed:
         out.append("resolved_principal")
-    if any(r.get("extra") for r in receipts):
+    if unknown_receipt_fields(receipts):
         out.append("unknown_receipt_field")
     return out
+
+
+def unknown_receipt_fields(receipts: list[dict]) -> bool:
+    """The extended contract refuses receipt content it did not enumerate.
+    That buys detection of the metadata channel and costs tolerance of any
+    provider-side field the contract was frozen before."""
+    return any(r.get("extra") for r in receipts) or any(
+        set(r) - KNOWN_RECEIPT_KEYS for r in receipts)
 
 
 def normalise_naive(args: dict) -> dict:
@@ -121,7 +138,7 @@ def contract_extended_naive(tool: str, anchor: dict, receipts: list[dict]) -> li
     allowed = "acct:" + str(normalised.get(PRINCIPAL_FIELD[tool], ""))
     if primary.get("resolved_principal") != allowed:
         out.append("resolved_principal")
-    if any(r.get("extra") for r in receipts):
+    if unknown_receipt_fields(receipts):
         out.append("unknown_receipt_field")
     return out
 
@@ -206,10 +223,20 @@ def manifest_pin(manifest: dict, frozen_sha: str) -> list[str]:
     return [] if manifest.get("sha256") == frozen_sha else ["manifest_hash"]
 
 
-def signed_manifest(manifest: dict, server_key: bytes) -> list[str]:
+def signed_manifest(manifest: dict, publisher_public: bytes) -> list[str]:
+    """Ed25519 verification of the served manifest against the publisher key.
+
+    In this threat model the publisher *is* the attacker, so a valid signature
+    proves only that the served manifest is the one the tool server meant to
+    serve.  This detector is therefore a threat-model fit check, not a defence
+    that could have won."""
     blob = json.dumps(manifest.get("tools", []), sort_keys=True, separators=(",", ":"))
-    expected = hmac.new(server_key, blob.encode(), hashlib.sha256).hexdigest()
-    return [] if hmac.compare_digest(expected, manifest.get("sig", "")) else ["manifest_signature"]
+    try:
+        Ed25519PublicKey.from_public_bytes(publisher_public).verify(
+            bytes.fromhex(manifest.get("sig", "")), blob.encode())
+        return []
+    except (InvalidSignature, ValueError):
+        return ["manifest_signature"]
 
 
 def response_detector(tool: str, tool_input: dict, response: dict) -> list[str]:

@@ -1,0 +1,62 @@
+{
+  "source": "https://github.com/modelcontextprotocol/servers",
+  "captured_by": "capture_official_schemas.py (official MCP Python SDK, stdio)",
+  "schema_file_sha256": "a6c9f89d1eb56c0a8e2007d79f01b9f303a476ff80e1ebb09b15559922a2e594",
+  "tool_table_sha256": "3c63ba9504df0a4ce6501cd55ffc7041f04d2fa66f30a48f0779cc4cdfbb79c2",
+  "provenance": [
+    {
+      "server": "filesystem",
+      "package": "@modelcontextprotocol/server-filesystem",
+      "version": "0.2.0",
+      "published_tools": 14,
+      "tools_sha256": "bb12be800776f4aa025b86020c490b44b477554fd51fd3be6bc288a8da03c293",
+      "kept": 13
+    },
+    {
+      "server": "memory",
+      "package": "@modelcontextprotocol/server-memory",
+      "version": "0.6.3",
+      "published_tools": 9,
+      "tools_sha256": "8e1b7cbc3fb04d984d91ba5ccce30da4300f271d485fef642d9d4e1b7e83e972",
+      "kept": 8
+    },
+    {
+      "server": "everything",
+      "package": "@modelcontextprotocol/server-everything",
+      "version": "2.0.0",
+      "published_tools": 13,
+      "tools_sha256": "c5f9c69ec280649d985e822b1b248b9a7b06e71a3709b4251fcd32df9e8c96d6",
+      "kept": 5
+    }
+  ],
+  "tools_under_test": 26,
+  "policy": {
+    "lower_fields": [
+      "destination",
+      "query",
+      "topic"
+    ],
+    "path_fields": [
+      "destination",
+      "location",
+      "path",
+      "source"
+    ],
+    "integer_fields": [
+      "a",
+      "b",
+      "head",
+      "tail"
+    ],
+    "defaults": {}
+  },
+  "conversion_rules": [
+    "keep tools declaring >=1 required property",
+    "declared arguments = published properties, in published order",
+    "enumerated arguments = published required list (the contract)",
+    "principal = first required property of string type, else first required",
+    "one honest effect per call, named <server>.<tool>"
+  ],
+  "seeds": 3,
+  "calls": 12
+}

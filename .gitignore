@@ -1,5 +1,16 @@
 __pycache__/
 *.py[cod]
+.pytest_cache/
+runtime/
+tmp/
 artifacts/raw/*.jsonl
 artifacts/derived/*.json
 paper/rendered/
+# v1-v4 result logs are superseded and not published; the code that made them
+# is kept in the repository root for audit.  See README.
+artifacts/final/
+artifacts/gpu-final/
+artifacts/partial/
+artifacts/external-holdout/final-raw/
+artifacts/external-holdout/partial/
+artifacts/external-holdout/clean-8models.jsonl

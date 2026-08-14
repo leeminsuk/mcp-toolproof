@@ -1,0 +1,501 @@
+{
+  "policy": {
+    "defaults": {},
+    "integer_fields": [
+      "a",
+      "b",
+      "head",
+      "tail"
+    ],
+    "lower_fields": [
+      "destination",
+      "query",
+      "topic"
+    ],
+    "path_fields": [
+      "destination",
+      "location",
+      "path",
+      "source"
+    ]
+  },
+  "provenance": [
+    {
+      "kept": 13,
+      "package": "@modelcontextprotocol/server-filesystem",
+      "published_tools": 14,
+      "server": "filesystem",
+      "tools_sha256": "bb12be800776f4aa025b86020c490b44b477554fd51fd3be6bc288a8da03c293",
+      "version": "0.2.0"
+    },
+    {
+      "kept": 8,
+      "package": "@modelcontextprotocol/server-memory",
+      "published_tools": 9,
+      "server": "memory",
+      "tools_sha256": "8e1b7cbc3fb04d984d91ba5ccce30da4300f271d485fef642d9d4e1b7e83e972",
+      "version": "0.6.3"
+    },
+    {
+      "kept": 5,
+      "package": "@modelcontextprotocol/server-everything",
+      "published_tools": 13,
+      "server": "everything",
+      "tools_sha256": "c5f9c69ec280649d985e822b1b248b9a7b06e71a3709b4251fcd32df9e8c96d6",
+      "version": "2.0.0"
+    }
+  ],
+  "tools": {
+    "everything.echo": {
+      "args": [
+        "message"
+      ],
+      "description": "Echoes back the input string",
+      "kinds": [
+        "everything.echo"
+      ],
+      "principal": "message",
+      "required": [
+        "message"
+      ],
+      "types": {
+        "message": "string"
+      }
+    },
+    "everything.get-annotated-message": {
+      "args": [
+        "includeImage",
+        "messageType"
+      ],
+      "description": "Demonstrates how annotations can be used to provide metadata about content.",
+      "kinds": [
+        "everything.get-annotated-message"
+      ],
+      "principal": "messageType",
+      "required": [
+        "messageType"
+      ],
+      "types": {
+        "includeImage": "boolean",
+        "messageType": "string"
+      }
+    },
+    "everything.get-structured-content": {
+      "args": [
+        "location"
+      ],
+      "description": "Returns structured content along with an output schema for client data validation",
+      "kinds": [
+        "everything.get-structured-content"
+      ],
+      "principal": "location",
+      "required": [
+        "location"
+      ],
+      "types": {
+        "location": "string"
+      }
+    },
+    "everything.get-sum": {
+      "args": [
+        "a",
+        "b"
+      ],
+      "description": "Returns the sum of two numbers",
+      "kinds": [
+        "everything.get-sum"
+      ],
+      "principal": "a",
+      "required": [
+        "a",
+        "b"
+      ],
+      "types": {
+        "a": "number",
+        "b": "number"
+      }
+    },
+    "everything.simulate-research-query": {
+      "args": [
+        "ambiguous",
+        "topic"
+      ],
+      "description": "Simulates a deep research operation that gathers, analyzes, and synthesizes information. Demonstrates MCP task-based ope",
+      "kinds": [
+        "everything.simulate-research-query"
+      ],
+      "principal": "topic",
+      "required": [
+        "topic"
+      ],
+      "types": {
+        "ambiguous": "boolean",
+        "topic": "string"
+      }
+    },
+    "filesystem.create_directory": {
+      "args": [
+        "path"
+      ],
+      "description": "Create a new directory or ensure a directory exists. Can create multiple nested directories in one operation. If the dir",
+      "kinds": [
+        "filesystem.create_directory"
+      ],
+      "principal": "path",
+      "required": [
+        "path"
+      ],
+      "types": {
+        "path": "string"
+      }
+    },
+    "filesystem.directory_tree": {
+      "args": [
+        "excludePatterns",
+        "path"
+      ],
+      "description": "Get a recursive tree view of files and directories as a JSON structure. Each entry includes 'name', 'type' (file/directo",
+      "kinds": [
+        "filesystem.directory_tree"
+      ],
+      "principal": "path",
+      "required": [
+        "path"
+      ],
+      "types": {
+        "excludePatterns": "array",
+        "path": "string"
+      }
+    },
+    "filesystem.edit_file": {
+      "args": [
+        "dryRun",
+        "edits",
+        "path"
+      ],
+      "description": "Make line-based edits to a text file. Each edit replaces exact line sequences with new content. Returns a git-style diff",
+      "kinds": [
+        "filesystem.edit_file"
+      ],
+      "principal": "path",
+      "required": [
+        "path",
+        "edits"
+      ],
+      "types": {
+        "dryRun": "boolean",
+        "edits": "array",
+        "path": "string"
+      }
+    },
+    "filesystem.get_file_info": {
+      "args": [
+        "path"
+      ],
+      "description": "Retrieve detailed metadata about a file or directory. Returns comprehensive information including size, creation time, l",
+      "kinds": [
+        "filesystem.get_file_info"
+      ],
+      "principal": "path",
+      "required": [
+        "path"
+      ],
+      "types": {
+        "path": "string"
+      }
+    },
+    "filesystem.list_directory": {
+      "args": [
+        "path"
+      ],
+      "description": "Get a detailed listing of all files and directories in a specified path. Results clearly distinguish between files and d",
+      "kinds": [
+        "filesystem.list_directory"
+      ],
+      "principal": "path",
+      "required": [
+        "path"
+      ],
+      "types": {
+        "path": "string"
+      }
+    },
+    "filesystem.list_directory_with_sizes": {
+      "args": [
+        "path",
+        "sortBy"
+      ],
+      "description": "Get a detailed listing of all files and directories in a specified path, including sizes. Results clearly distinguish be",
+      "kinds": [
+        "filesystem.list_directory_with_sizes"
+      ],
+      "principal": "path",
+      "required": [
+        "path"
+      ],
+      "types": {
+        "path": "string",
+        "sortBy": "string"
+      }
+    },
+    "filesystem.move_file": {
+      "args": [
+        "destination",
+        "source"
+      ],
+      "description": "Move or rename files and directories. Can move files between directories and rename them in a single operation. If the d",
+      "kinds": [
+        "filesystem.move_file"
+      ],
+      "principal": "source",
+      "required": [
+        "source",
+        "destination"
+      ],
+      "types": {
+        "destination": "string",
+        "source": "string"
+      }
+    },
+    "filesystem.read_file": {
+      "args": [
+        "head",
+        "path",
+        "tail"
+      ],
+      "description": "Read the complete contents of a file as text. DEPRECATED: Use read_text_file instead.",
+      "kinds": [
+        "filesystem.read_file"
+      ],
+      "principal": "path",
+      "required": [
+        "path"
+      ],
+      "types": {
+        "head": "number",
+        "path": "string",
+        "tail": "number"
+      }
+    },
+    "filesystem.read_media_file": {
+      "args": [
+        "path"
+      ],
+      "description": "Read a file and return it as a base64-encoded content block with its MIME type. Image and audio files are returned as im",
+      "kinds": [
+        "filesystem.read_media_file"
+      ],
+      "principal": "path",
+      "required": [
+        "path"
+      ],
+      "types": {
+        "path": "string"
+      }
+    },
+    "filesystem.read_multiple_files": {
+      "args": [
+        "paths"
+      ],
+      "description": "Read the contents of multiple files simultaneously. This is more efficient than reading files one by one when you need t",
+      "kinds": [
+        "filesystem.read_multiple_files"
+      ],
+      "principal": "paths",
+      "required": [
+        "paths"
+      ],
+      "types": {
+        "paths": "array"
+      }
+    },
+    "filesystem.read_text_file": {
+      "args": [
+        "head",
+        "path",
+        "tail"
+      ],
+      "description": "Read the complete contents of a file from the file system as text. Handles various text encodings and provides detailed ",
+      "kinds": [
+        "filesystem.read_text_file"
+      ],
+      "principal": "path",
+      "required": [
+        "path"
+      ],
+      "types": {
+        "head": "number",
+        "path": "string",
+        "tail": "number"
+      }
+    },
+    "filesystem.search_files": {
+      "args": [
+        "excludePatterns",
+        "path",
+        "pattern"
+      ],
+      "description": "Recursively search for files and directories matching a pattern. The patterns should be glob-style patterns that match p",
+      "kinds": [
+        "filesystem.search_files"
+      ],
+      "principal": "path",
+      "required": [
+        "path",
+        "pattern"
+      ],
+      "types": {
+        "excludePatterns": "array",
+        "path": "string",
+        "pattern": "string"
+      }
+    },
+    "filesystem.write_file": {
+      "args": [
+        "content",
+        "path"
+      ],
+      "description": "Create a new file or completely overwrite an existing file with new content. Use with caution as it will overwrite exist",
+      "kinds": [
+        "filesystem.write_file"
+      ],
+      "principal": "path",
+      "required": [
+        "path",
+        "content"
+      ],
+      "types": {
+        "content": "string",
+        "path": "string"
+      }
+    },
+    "memory.add_observations": {
+      "args": [
+        "observations"
+      ],
+      "description": "Add new observations to existing entities in the knowledge graph",
+      "kinds": [
+        "memory.add_observations"
+      ],
+      "principal": "observations",
+      "required": [
+        "observations"
+      ],
+      "types": {
+        "observations": "array"
+      }
+    },
+    "memory.create_entities": {
+      "args": [
+        "entities"
+      ],
+      "description": "Create multiple new entities in the knowledge graph",
+      "kinds": [
+        "memory.create_entities"
+      ],
+      "principal": "entities",
+      "required": [
+        "entities"
+      ],
+      "types": {
+        "entities": "array"
+      }
+    },
+    "memory.create_relations": {
+      "args": [
+        "relations"
+      ],
+      "description": "Create multiple new relations between entities in the knowledge graph. Relations should be in active voice",
+      "kinds": [
+        "memory.create_relations"
+      ],
+      "principal": "relations",
+      "required": [
+        "relations"
+      ],
+      "types": {
+        "relations": "array"
+      }
+    },
+    "memory.delete_entities": {
+      "args": [
+        "entityNames"
+      ],
+      "description": "Delete multiple entities and their associated relations from the knowledge graph",
+      "kinds": [
+        "memory.delete_entities"
+      ],
+      "principal": "entityNames",
+      "required": [
+        "entityNames"
+      ],
+      "types": {
+        "entityNames": "array"
+      }
+    },
+    "memory.delete_observations": {
+      "args": [
+        "deletions"
+      ],
+      "description": "Delete specific observations from entities in the knowledge graph",
+      "kinds": [
+        "memory.delete_observations"
+      ],
+      "principal": "deletions",
+      "required": [
+        "deletions"
+      ],
+      "types": {
+        "deletions": "array"
+      }
+    },
+    "memory.delete_relations": {
+      "args": [
+        "relations"
+      ],
+      "description": "Delete multiple relations from the knowledge graph",
+      "kinds": [
+        "memory.delete_relations"
+      ],
+      "principal": "relations",
+      "required": [
+        "relations"
+      ],
+      "types": {
+        "relations": "array"
+      }
+    },
+    "memory.open_nodes": {
+      "args": [
+        "names"
+      ],
+      "description": "Open specific nodes in the knowledge graph by their names",
+      "kinds": [
+        "memory.open_nodes"
+      ],
+      "principal": "names",
+      "required": [
+        "names"
+      ],
+      "types": {
+        "names": "array"
+      }
+    },
+    "memory.search_nodes": {
+      "args": [
+        "query"
+      ],
+      "description": "Search for nodes in the knowledge graph based on a query",
+      "kinds": [
+        "memory.search_nodes"
+      ],
+      "principal": "query",
+      "required": [
+        "query"
+      ],
+      "types": {
+        "query": "string"
+      }
+    }
+  }
+}

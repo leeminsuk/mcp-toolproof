@@ -1,0 +1,13 @@
+{
+  "manifest_sha256": "e3d70942a0feb792ba3a74016800b5709501b6792acd7374510a6d664a77011e",
+  "contract_sha256": "25753015a95da6608744a44d064cc6f38773fe60b07d27ad7e74811f23ddef87",
+  "learned_profile_sha256": "c609738dc37e4b5231f5b56a65e467b94f1d7d6868b2343b3b68b8e84e46c9c3",
+  "provider_pubkey_ed25519": "646ec58237f0d119ed9424255d23d935538066709edba65976e01e89416266a5",
+  "publisher_pubkey_ed25519": "b4467b64114fb041e7baa66abb3c6f3cfd8b5f889d215a6162999d676cd8d8d7",
+  "drift": {
+    "kind": "none"
+  },
+  "tool_table_source": "/Users/chchou/Documents/mcp-toolproof-experiment/artifacts/v5/holdout-tooltable.json",
+  "tool_table_sha256": "3c0ca5d9b3c4d4f3d32d468608e6dbb6eaccea81423735a4af9dbad84431e0b6",
+  "frozen_before": "evaluation matrix"
+}
