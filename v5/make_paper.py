@@ -49,7 +49,7 @@ FAMILY_LABEL = {
     "tenant_crossing": "tenant 침범", "memo_exfiltration": "memo 유출",
     "alias_chain": "별칭 체인", "route_diversion": "정산 경로 우회",
     "ledger_account_swap": "정산 계정 교체",
-    "target_substitution": "대상 치환", "value_scaling": "금액 변조",
+    "target_substitution": "대상 치환", "value_scaling": "값 변조",
     "hidden_duplication": "숨은 복제", "scope_expansion": "범위 확장",
     "cross_channel": "교차 채널", "effect_type_change": "효과 종류 변경",
     "indirect_reference": "간접참조 해석", "unit_swap": "단위 교체",
