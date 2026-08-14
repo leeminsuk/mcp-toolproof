@@ -583,7 +583,7 @@ def build_story(a: dict, st: dict, figures: dict, width: float) -> list:
     add(Paragraph("재현성", st["h"]))
     add(Paragraph(
         f"provider와 도구 서버는 독립 프로세스로 실행했고 계약 해시, manifest 해시, 학습 프로파일 해시를 평가 전에 "
-        f"freeze.json에 기록하고, 코드와 원시 로그를 커밋 46f0412로 고정했다. 이 커밋은 이후 변경을 막을 뿐 계약 "
+        f"freeze.json에 기록하고, 코드와 원시 로그를 커밋 60ce716로 고정했다. 이 커밋은 이후 변경을 막을 뿐 계약 "
         f"작성이 공격 작성보다 앞섰다는 순서까지 증명하지는 않는다. 본문의 모든 수치는 결정적 클라이언트 {a['rows']:,}행과 에이전트 루프 "
         f"{llm['rows']:,}행(유효 {llm['valid']:,}) 원시 JSONL에서 분석 스크립트가 자동 집계했다. " if llm else
         f"freeze.json에 기록했다. 본문의 모든 수치는 {a['rows']:,}행 원시 JSONL에서 분석 스크립트가 자동 집계했다. "
