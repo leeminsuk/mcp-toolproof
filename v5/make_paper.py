@@ -87,10 +87,12 @@ def styles(scale: float) -> dict:
         "body": S("body", 8.3, 10.5, alignment=TA_JUSTIFY),
         # Captions and the reference block were called out as too small to
         # read in the previous revision, so both sit higher than before.
-        "cap": S("cap", 7.1, 8.7, textColor=colors.HexColor(GRAY), spaceBefore=1.2),
+        "cap": S("cap", 7.2, 8.8, textColor=colors.HexColor(GRAY), spaceBefore=1.2),
         "cell": S("cell", 7.0, 8.4),
         "cellb": S("cellb", 7.0, 8.4, textColor=colors.white),
-        "tiny": S("tiny", 7.0, 8.5),
+        # References and the reproducibility note were called out as too small
+        # to read, so they sit closer to body size than to caption size.
+        "tiny": S("tiny", 7.5, 9.1),
         "formula": ParagraphStyle(name="formula", fontName="Courier",
                                   fontSize=6.9 * scale, leading=9.4 * scale,
                                   spaceBefore=2 * scale, spaceAfter=2 * scale),
@@ -184,6 +186,28 @@ def pct(value: float, digits: int = 3) -> str:
     return f"{value:.{digits}f}"
 
 
+# Korean particles agree with the sound of the preceding syllable, and every
+# number in this paper is interpolated from the data, so the particle has to be
+# chosen from the value rather than typed.  A decimal is read digit by digit;
+# 0·1·3·6·7·8 end in a consonant (영·일·삼·육·칠·팔), 2·4·5·9 in a vowel.
+_CONSONANT_FINAL = set("013678")
+
+
+def jo(text: str, pair: str) -> str:
+    """``pair`` is the consonant-final form followed by the vowel-final form,
+    e.g. ``jo(x, "은는")`` -> "은" after 0.000, "는" after 0.769."""
+    digits = [c for c in text if c.isdigit()]
+    consonant = bool(digits) and digits[-1] in _CONSONANT_FINAL
+    half = len(pair) // 2
+    return pair[:half] if consonant else pair[half:]
+
+
+def num(value: float, pair: str, digits: int = 3) -> str:
+    """A formatted number followed by the particle its reading requires."""
+    text = pct(value, digits)
+    return text + jo(text, pair)
+
+
 def fig_image(path: Path, width: float) -> Image:
     """Place a figure at column width without distorting it."""
     from reportlab.lib.utils import ImageReader
@@ -225,18 +249,19 @@ def build_story(a: dict, st: dict, figures: dict, width: float) -> list:
         f"실제 외부 효과만 바꿀 수 있다. 본 연구는 우월한 방어를 제안하지 않는다. 같은 workload에서 세 축(관측면 "
         f"독립성, 승인 인자의 해시 결합, 계약이 열거한 영수증 의미 범위)이 만드는 사각지대가 서로를 보완한다는 것을 "
         f"분해해 측정한다. 영수증은 provider가 Ed25519로 서명하고 검증기는 공개키만 가지므로 도구 서버도 검증기도 "
-        f"영수증을 만들어 낼 수 없다. 정답 라벨은 코드를 공유하지 않는 두 프로그램이 각각 계산하고 "
-        f"{orc['rows']:,}행 전부에서 일치했다. 결정적 실행 {dec['rows']:,}회에서, 필드를 열거해 값을 대조하는 계약은 "
-        f"계약이 검사하는 인자·효과에서 {pct(both['extended_intent'], 2)}, provider 해석·메타데이터에서 "
-        f"{pct(v4only['extended_intent'], 3)}, 계약이 검사하지 않는 인자에서 {pct(neither['extended_intent'], 3)}였고, "
-        f"승인 요청 전체를 해시로 묶는 영수증은 같은 순서로 {pct(both['approval_bound'], 2)}, "
-        f"{pct(v4only['approval_bound'], 3)}, {pct(neither['approval_bound'], 3)}로 정반대의 사각지대를 갖는다. 두 "
-        f"1.00은 성능이 아니라 각 방식이 그 필드를 보기로 한 정의의 결과다. 영수증에 남지만 어느 계약도 열거하지 않는 "
-        f"처리 경로는 두 방식이 함께 놓쳐 {pct(unseen['extended_intent'], 3)}과 {pct(unseen['approval_bound'], 3)}였다. "
-        f"같은 구조가 본 연구와 무관하게 공개된 MCP 서버 {hold['tools']}개 도구 위에서 "
-        f"{hold['independent']:,}행으로 재현됐고(계약은 발행자가 쓴 required 목록), 공식 MCP SDK 전송 위에서도 "
-        f"재현됐다. 낮은 오탐도 무조건적이지 않다. provider가 영수증에 릴리스 태그를 덧붙이는 변화만으로 값 대조 "
-        f"계약의 오탐은 {pct(drift.get('receipt_annotation', {}).get('fpr', {}).get('extended_intent', 0), 2)}가 된다. "
+        f"영수증을 만들어 낼 수 없다. 정답 라벨은 코드를 공유하지 않는 두 프로그램이 각각 계산했고 "
+        f"{orc['rows'] + hold['oracle']['rows']:,}행 전부에서 일치했다. 결정적 실행 {dec['rows']:,}회에서, 필드를 "
+        f"열거해 값을 대조하는 계약의 Recall은 계약이 검사하는 인자·효과에서 {pct(both['extended_intent'], 2)}, "
+        f"provider 해석·메타데이터에서 {pct(v4only['extended_intent'], 3)}, 계약이 검사하지 않는 인자에서 "
+        f"{num(neither['extended_intent'], '이고가')}, 승인 요청 전체를 해시로 묶는 영수증은 같은 순서로 "
+        f"{pct(both['approval_bound'], 2)}, {pct(v4only['approval_bound'], 3)}, "
+        f"{num(neither['approval_bound'], '으로로')} 정반대의 사각지대를 갖는다. 두 1.00은 성능이 아니라 각 방식이 그 "
+        f"필드를 보기로 한 정의의 결과다. 영수증에 남지만 어느 계약도 열거하지 않는 처리 경로는 두 방식이 함께 놓쳐 "
+        f"각각 {pct(unseen['extended_intent'], 3)}, {pct(unseen['approval_bound'], 3)}에 그쳤다. 같은 구조가 본 "
+        f"연구와 무관하게 공개된 MCP 서버 {hold['tools']}개 도구 위에서 {hold['independent']:,}행으로 재현됐고"
+        f"(계약은 발행자가 쓴 required 목록), 공식 MCP SDK 전송 위에서도 재현됐다. 낮은 오탐도 무조건적이지 않다. "
+        f"provider가 영수증에 릴리스 태그를 덧붙이는 변화 하나만으로 값 대조 계약의 오탐이 "
+        f"{num(drift.get('receipt_annotation', {}).get('fpr', {}).get('extended_intent', 0), '으로로', 2)} 뛴다. "
         f"경계는 없어지지 않고 자리를 옮긴다.", st["body"]))
 
     add(Paragraph("1. 서론", st["h"]))
@@ -293,7 +318,7 @@ def build_story(a: dict, st: dict, figures: dict, width: float) -> list:
         f"영수증 전체 순열에 대한 완전 일치다. 그런데 이 정의만으로는 라벨이 provider 코드에 의존한다. 생성 함수에 "
         f"결함이 있으면 기록된 영수증과 기대 영수증이 같은 방향으로 틀어져 라벨이 그것을 볼 수 없다. 그래서 같은 "
         f"라벨을 코드를 공유하지 않는 두 번째 프로그램으로 다시 계산했다. 이 프로그램은 기대 영수증을 만들지 않고, "
-        f"발행된 도구 표에서 유도한 불변식 {len(orc['invariants_fired'])}개(효과 개수·종류 순서·연산 이름·인자 값·"
+        f"발행된 도구 표에서 유도한 불변식 {orc['invariants_defined']}개(효과 개수·종류 순서·연산 이름·인자 값·"
         f"인자 집합·해석된 principal·전달 여부·정산 경로·정산 계정·승인 해시·주석)를 기록된 영수증 위에서 직접 "
         f"검사한다. 정규화도 해시도 자기 코드로 다시 구현했다. 두 라벨은 본 행렬 {orc['rows']:,}행과 hold-out "
         f"{hold['oracle']['rows']:,}행 전부에서 일치했고(불일치 {orc['disagreements'] + hold['oracle']['disagreements']}건), "
@@ -392,11 +417,11 @@ def build_story(a: dict, st: dict, figures: dict, width: float) -> list:
     add(Paragraph(
         f"공격 비율은 {100 * a['attacks_independent'] / dec['per_observer']:.1f}%이며 운영 기저율은 5.7에서 "
         f"재가중한다. 전 계열 집계는 계열 구성비의 함수이므로 싣지 않는다. v3가 B에서 보이는 "
-        f"{pct(v4only['frozen_intent'], 3)}은 같은 표본의 FPR {pct(clean_fpr['frozen_intent'], 3)}과 구별되지 "
+        f"{num(v4only['frozen_intent'], '은는')} 같은 표본의 FPR {num(clean_fpr['frozen_intent'], '과와')} 구별되지 "
         f"않으므로 탐지 신호로 읽지 않는다. manifest pin과 서명 manifest의 Recall 0도 미구현이 아니라 두 센서가 보는 "
         f"대상이 바뀌지 않았기 때문이다. 같은 표본에서 manifest pin은 정상 migration에만 FPR "
-        f"{pct(pin['by_family']['migration']['fpr'], 2)}로 발화하므로 배선은 살아 있고, 표 2의 "
-        f"{pct(clean_fpr['manifest_pin'], 3)}은 재제출을 뺀 정상 {dec['benign_excl_resubmit']:,}행 가운데 migration "
+        f"{num(pin['by_family']['migration']['fpr'], '으로로', 2)} 발화하므로 배선은 살아 있고, 표 2의 "
+        f"{num(clean_fpr['manifest_pin'], '은는')} 재제출을 뺀 정상 {dec['benign_excl_resubmit']:,}행 가운데 migration "
         f"{fam['migration']['benign']:,}행에서만 전부 발화한 결과 "
         f"{fam['migration']['benign']:,}/{dec['benign_excl_resubmit']:,}이다. 응답 검사는 서버가 승인값을 그대로 "
         f"되돌려 주는 한 0을 유지한다. 응답 검사가 신호를 얻으려면 응답이 서버가 아니라 provider에서 와야 하며, "
@@ -406,13 +431,13 @@ def build_story(a: dict, st: dict, figures: dict, width: float) -> list:
     add(Paragraph(
         f"영수증 출처만 provider에서 서버 자기보고로 바꾸고 나머지를 고정하면, 두 계약이 모두 열거하는 A 그룹에서 "
         f"v4 Recall이 {pct(both['extended_intent'], 2)}에서 "
-        f"{pct(s_group['both']['recall']['extended_intent'], 3)}로, v3가 {pct(both['frozen_intent'], 2)}에서 "
-        f"{pct(s_group['both']['recall']['frozen_intent'], 3)}로 떨어지고 승인 결합도 "
-        f"{pct(s_group['both']['recall']['approval_bound'], 3)}가 된다. 이 결과는 측정이라기보다 정리의 시연이다. "
+        f"{num(s_group['both']['recall']['extended_intent'], '으로로')}, v3가 {pct(both['frozen_intent'], 2)}에서 "
+        f"{num(s_group['both']['recall']['frozen_intent'], '으로로')} 떨어지고 승인 결합도 "
+        f"{num(s_group['both']['recall']['approval_bound'], '이가')} 된다. 이 결과는 측정이라기보다 정리의 시연이다. "
         f"관측면을 공격자가 통제하면 공격자는 승인된 값을 그대로 보고할 수 있고, 값 비교로 만든 어떤 계약도 위반을 "
         f"볼 수 없다. 본 구현의 자기보고 서버는 provider와 동일한 정규화로 승인값을 되돌려 주므로 값·종류·개수·"
         f"principal이 모두 일치한다. 서명 검증을 켜면 자기보고 영수증의 "
-        f"{pct(a['signature_rejects_self_report'], 2)}가 무효로 걸리지만, 그 결과는 탐지가 아니라 가용성 판정이다. "
+        f"{num(a['signature_rejects_self_report'], '이가', 2)} 무효로 걸리지만, 그 결과는 탐지가 아니라 가용성 판정이다. "
         f"provider 서명 없이 모은 영수증 위의 의미 계약은 두 번째 자기보고에 지나지 않는다.", st["body"]))
 
     add(Paragraph("5.2 열거 범위가 탐지 범위를 정한다", st["h"]))
@@ -420,8 +445,8 @@ def build_story(a: dict, st: dict, figures: dict, width: float) -> list:
         f"B 그룹에서 v4가 {pct(v4only['extended_intent'], 3)}인 것은 v4가 해석된 principal과 미지 영수증 필드를 새로 "
         f"열거했기 때문이지 규칙이 일반적으로 강해서가 아니다. 같은 B 안에서도 단위 교체가 "
         f"{pct(fam['unit_swap']['recall']['extended_intent'], 2)}에 머무는 것은 도구 8종 중 금액을 가진 둘만 단위를 "
-        f"열거하기 때문이다(그림 1). B와 C에서 v3가 보이는 {pct(v4only['frozen_intent'], 3)}과 "
-        f"{pct(neither['frozen_intent'], 3)}은 v3의 정상 FPR {pct(clean_fpr['frozen_intent'], 3)}과 같은 크기다. "
+        f"열거하기 때문이다(그림 1). B와 C에서 v3가 보이는 {num(v4only['frozen_intent'], '과와')} "
+        f"{num(neither['frozen_intent'], '은는')} v3의 정상 FPR {num(clean_fpr['frozen_intent'], '과와')} 같은 크기다. "
         f"원문 비교가 provider 정규화를 모르기 때문에 생기는 오경보가 공격 행에도 같은 비율로 떨어진 것이므로 탐지 "
         f"신호가 아니다. 같은 그룹 안에서 세 방어가 갈리는 값도 같은 이야기를 한다. A에서 궤적은 "
         f"{pct(both['trajectory_lite'], 3)}, 학습 관계는 {pct(both['learned_relation'], 3)}, 계약은 "
@@ -441,12 +466,12 @@ def build_story(a: dict, st: dict, figures: dict, width: float) -> list:
     add(Paragraph(
         f"필드를 열거하는 대신 승인 인자 전체를 해시로 묶으면 인자 공간의 사각지대가 사라진다. 승인 결합은 계약이 "
         f"검사하지 않는 인자 그룹(C)에서 {pct(neither['approval_bound'], 2)}, 무작위 인자(E)에서 "
-        f"{pct(fuzz_rec['approval_bound'], 2)}로 값 대조 계약의 {pct(neither['extended_intent'], 3)}·"
+        f"{num(fuzz_rec['approval_bound'], '으로로', 2)} 값 대조 계약의 {pct(neither['extended_intent'], 3)}·"
         f"{pct(fuzz_rec['extended_intent'], 3)}를 크게 앞선다. 반대로 provider 해석·메타데이터(B)에서는 "
-        f"{pct(v4only['approval_bound'], 3)}로 값 대조 계약의 {pct(v4only['extended_intent'], 3)}보다 낮다. 간접참조 "
+        f"{num(v4only['approval_bound'], '으로로')} 값 대조 계약의 {pct(v4only['extended_intent'], 3)}보다 낮다. 간접참조 "
         f"해석과 메타데이터 채널은 인자를 하나도 바꾸지 않으므로 해시가 그대로다. 두 방식이 함께 놓치는 그룹이 D다. "
         f"별칭 체인, 정산 경로 우회, 정산 계정 교체 {grp['unseen']['attacks']:,}회에서 값 대조 계약은 "
-        f"{pct(unseen['extended_intent'], 3)}, 승인 결합은 {pct(unseen['approval_bound'], 3)}이며 승인 결합의 "
+        f"{pct(unseen['extended_intent'], 3)}, 승인 결합은 {num(unseen['approval_bound'], '이며며')} 승인 결합의 "
         f"클러스터 95% 구간은 [{pct(cig['unseen']['approval_bound'][0], 3)}, "
         f"{pct(cig['unseen']['approval_bound'][1], 3)}]다. provider가 영수증에 남기는 사실인데 어느 계약도 읽지 "
         f"않기 때문이다. 인자 공간은 해시로 닫을 수 있고 provider 해석은 열거로 닫을 수 있지만, 열거를 한 단계 늘리면 "
@@ -457,11 +482,11 @@ def build_story(a: dict, st: dict, figures: dict, width: float) -> list:
     add(Paragraph("5.4 낮은 오탐은 구현 합치와 provider 정지에 기댄다", st["h"]))
     add(Paragraph(
         f"값 대조 계약의 오탐 0은 검증자가 provider와 같은 정규화 함수를 쓴 결과다. 공백 제거만 하는 정규화로 다시 "
-        f"돌리면 FPR이 {pct(clean_fpr['extended_intent'], 3)}에서 {pct(clean_fpr['extended_naive'], 3)}로 오른다. "
+        f"돌리면 FPR이 {pct(clean_fpr['extended_intent'], 3)}에서 {num(clean_fpr['extended_naive'], '으로로')} 오른다. "
         f"승인 결합도 마찬가지여서, 클라이언트가 해시 전에 문자열을 다듬고 provider는 원본을 해시하면 "
-        f"{pct(clean_fpr['approval_bound'], 3)}에서 {pct(clean_fpr['approval_naive'], 3)}로 오른다. 정규화 의존이 "
+        f"{pct(clean_fpr['approval_bound'], 3)}에서 {num(clean_fpr['approval_naive'], '으로로')} 오른다. 정규화 의존이 "
         f"직렬화 의존으로 형태만 바뀐 것이다. 확장 계약의 오탐이 한 계열에서만 나오는 것도 같은 종류의 사실이다. "
-        f"사용자가 승인한 재제출에서 네 방어가 모두 FPR {pct(fam['resubmit']['fpr']['extended_intent'], 2)}로 "
+        f"사용자가 승인한 재제출에서 네 방어가 모두 FPR {num(fam['resubmit']['fpr']['extended_intent'], '으로로', 2)} "
         f"경보하는데, 개수 규칙만으로는 숨은 복제와 정당한 재제출을 나눌 수 없기 때문이다. 개수 계약은 idempotency "
         f"키 정책과 함께 정의해야 한다.", st["body"]))
     if drift:
@@ -491,12 +516,12 @@ def build_story(a: dict, st: dict, figures: dict, width: float) -> list:
         d_hash = drift["hash_basis_change"]["fpr"]
         add(Paragraph(
             f"두 방식은 서로 다른 변화에서 무너진다. 값 대조 계약은 provider가 영수증에 필드를 하나 덧붙이는 것만으로 "
-            f"오탐이 {pct(d_ann['extended_intent'], 2)}가 된다. 메타데이터 채널을 잡아 준 미지 필드 거부 규칙이 그 "
+            f"오탐이 {num(d_ann['extended_intent'], '이가', 2)} 된다. 메타데이터 채널을 잡아 준 미지 필드 거부 규칙이 그 "
             f"원인이어서, 탐지력과 drift 취약성이 같은 곳에서 나온다. 정규화가 한 단계 강해지면 v4 "
-            f"{pct(d_norm['extended_intent'], 3)}, v3 {pct(d_norm['frozen_intent'], 3)}로 둘 다 오른다. 반대로 승인 "
-            f"결합은 이 둘 모두에 {pct(d_ann['approval_bound'], 3)}로 반응하지 않는다. 해시가 provider 내부 표현이 "
+            f"{pct(d_norm['extended_intent'], 3)}, v3 {num(d_norm['frozen_intent'], '으로로')} 둘 다 오른다. 반대로 승인 "
+            f"결합은 이 둘 모두에 {num(d_ann['approval_bound'], '으로로')} 반응하지 않는다. 해시가 provider 내부 표현이 "
             f"아니라 요청 바이트에 걸려 있기 때문이다. 대신 provider가 해시 기준을 바꾸면 승인 결합만 "
-            f"{pct(d_hash['approval_bound'], 3)}로 오른다. Unicode NFC에서 셋 다 0인 것은 강건성이 아니라 본 정상 "
+            f"{num(d_hash['approval_bound'], '으로로')} 오른다. Unicode NFC에서 셋 다 0인 것은 강건성이 아니라 본 정상 "
             f"코퍼스가 ASCII뿐이라 그 변화가 값을 바꾸지 못한 결과다.", st["body"]))
 
     if hold:
@@ -532,13 +557,23 @@ def build_story(a: dict, st: dict, figures: dict, width: float) -> list:
             f"값 대조가 {pct(hg['neither']['recall']['extended_intent'], 3)}인데 승인 결합은 "
             f"{pct(hg['neither']['recall']['approval_bound'], 2)}, provider 해석을 건드리는 B에서는 반대로 값 대조 "
             f"{pct(hg['v4_only']['recall']['extended_intent'], 3)}에 승인 결합 "
-            f"{pct(hg['v4_only']['recall']['approval_bound'], 3)}이며, D는 "
-            f"{pct(hg['unseen']['recall']['extended_intent'], 3)}과 "
-            f"{pct(hg['unseen']['recall']['approval_bound'], 3)}으로 여전히 공통 사각지대다. 달라진 것은 오탐 쪽이다. "
+            f"{num(hg['v4_only']['recall']['approval_bound'], '이며며')}, D는 "
+            f"{num(hg['unseen']['recall']['extended_intent'], '과와')} "
+            f"{num(hg['unseen']['recall']['approval_bound'], '으로로')} 여전히 공통 사각지대다. 달라진 것은 오탐 쪽이다. "
             f"원문 비교 계약 v3의 FPR이 본 행렬 {pct(clean_fpr['frozen_intent'], 3)}에서 "
-            f"{pct(hold['fpr_excl_resubmit']['frozen_intent'], 3)}로 오르는데, 남의 스키마에는 검증자가 모르는 "
+            f"{num(hold['fpr_excl_resubmit']['frozen_intent'], '으로로')} 오르는데, 남의 스키마에는 검증자가 모르는 "
             f"정규화 대상 필드가 더 많기 때문이다. 사각지대의 구조는 도구 표를 바꿔도 남고, 오탐의 크기는 도구 표를 "
             f"따라 움직인다.", st["body"]))
+        fid = hold.get("family_fidelity")
+        if fid:
+            add(Paragraph(
+                f"계열이 남의 스키마에서 뜻을 그대로 유지하지는 않는다는 점은 적어 둔다. 공개 스키마는 선언은 "
+                f"하되 required가 아닌 인자를 거의 두지 않아서, 도구 {fid['tools']}종 중 "
+                f"{fid['with_optional_args']}종에서만 C 계열이 원래 형태(선언됐지만 계약이 열거하지 않는 인자)를 "
+                f"유지한다. 나머지에서는 schema가 선언한 적조차 없는 필드를 주입하므로 더 강한 변형이 되고, 필수 "
+                f"인자가 하나뿐인 {fid['tools'] - fid['multi_required']}종에서는 값 변조가 대상 치환과 같아진다. "
+                f"C의 대비가 유지되는 것은 두 경우 모두 계약이 그 필드를 보지 않기 때문이지, 계열이 동일하기 "
+                f"때문은 아니다.", st["body"]))
 
     if real:
         add(Paragraph("5.6 실제 MCP 전송 위에서, 그리고 전송 장애와 구별해서", st["h"]))
@@ -598,8 +633,8 @@ def build_story(a: dict, st: dict, figures: dict, width: float) -> list:
         f"유병률을 운영 기저율로 재가중하면 v4의 F1은 하나로 정해지지 않는다. 오탐이 0으로 측정됐기 때문이며, 이는 "
         f"위험이 0이라는 뜻이 아니라 표본이 그 위 어디까지인지를 말해 주지 않는다는 뜻이다. 1:999에서 점추정은 "
         f"{pct(b999['extended_intent']['point'], 3)}, rule of three 상한을 조건 클러스터 단위 "
-        f"3/{zero['n_clusters']}={zero['fpr_upper_95']:.4f}로 잡으면 {pct(b999['extended_intent']['worst'], 3)}, 행 "
-        f"단위 3/{zero['n_benign']:,}={zero['fpr_upper_95_row']:.5f}로 잡으면 "
+        f"3/{zero['n_clusters']}={num(zero['fpr_upper_95'], '으로로', 4)} 잡으면 {pct(b999['extended_intent']['worst'], 3)}, 행 "
+        f"단위 3/{zero['n_benign']:,}={num(zero['fpr_upper_95_row'], '으로로', 5)} 잡으면 "
         f"{pct(b999['extended_intent']['worst_row'], 3)}이고, 측정 부트스트랩 95% FPR 구간은 "
         f"[{pct(a['ci95_fpr_excl_resubmit']['extended_intent'][0], 3)}, "
         f"{pct(a['ci95_fpr_excl_resubmit']['extended_intent'][1], 3)}]다. 조건 안의 반복은 같은 코드 경로를 다시 밟는 "
@@ -628,7 +663,7 @@ def build_story(a: dict, st: dict, figures: dict, width: float) -> list:
             f"도구 schema는 서버가 준 manifest를 그대로 넘겼으며, 도구 호출이 정확히 하나이고 배정된 도구와 같을 "
             f"때만 유효로 셌다. 모델별 표본은 각 {llm['rows'] // max(1, len(llm['models']))}회다. "
             f"{len(llm['availability']) - len(live)}종은 이 경로에서 도구 호출을 한 번도 만들지 못했고, 호출을 만든 "
-            f"{len(live)}종 사이에서도 생성률이 {pct(min(live.values()), 3)}–{pct(max(live.values()), 3)}로 갈렸다. "
+            f"{len(live)}종 사이에서도 생성률이 {pct(min(live.values()), 3)}–{num(max(live.values()), '으로로')} 갈렸다. "
             f"방어가 적용될 수 있는 범위 자체가 모델 능력에 달려 있다. 확실한 관찰은 하나 더 있다. 서버가 정상인데 "
             f"모델만 이탈한 {dev['rows']}건 가운데 승인 의도 앵커가 잡은 것은 {dev['intent_flags']}건뿐이고, 나머지는 "
             f"두 계약이 모두 열거하지 않은 필드에서 일어났다. 앵커는 무엇과 비교할지를 정하지만, 무엇을 볼 수 "
@@ -641,15 +676,13 @@ def build_story(a: dict, st: dict, figures: dict, width: float) -> list:
         f"정답 라벨을 코드를 공유하지 않는 두 구현으로 계산해 {orc['rows'] + hold['oracle']['rows']:,}행 전부에서 "
         f"일치를 확인했으며(2.1), 계약과 학습 프로파일을 평가 전에 해시로 동결했다. 그래도 남는 것이 있다. 공격은 "
         f"여전히 본 연구가 썼고, 두 오라클 구현도 같은 저자의 것이며, 동결은 이후 변경을 막을 뿐 계약 작성이 공격 "
-        f"작성보다 앞섰다는 순서를 증명하지 않는다. 제3자가 쓴 공격이나 blind 계약 작성이 다음 단계다. A 그룹의 "
-        f"1.00과 승인 결합의 C·E 1.00을 구성적이라고 반복해 적는 이유도 같다. 실제로 측정된 것은 계열이 인자를 "
-        f"건드리는지 provider 해석을 건드리는지의 분할, 0에 가까운 세 칸, 표 3의 drift 취약성, 그리고 그 셋이 남의 "
-        f"도구 표와 실제 SDK 전송에서도 재현된다는 사실이다. provider는 로컬 프로세스라 프로세스·키·저장소 분리는 "
-        f"재현했으나 상용 SaaS의 tenant 격리와 최종 principal은 검증하지 않았고, 정상 트래픽도 합성이라 표 3은 "
-        f"재시도·locale·API 버전 폐기 같은 장기 drift 전체를 대표하지 않는다.", st["body"]))
+        f"작성보다 앞섰다는 순서를 증명하지 않는다. 제3자가 쓴 공격이나 blind 계약 작성이 다음 단계다. 실제로 측정된 "
+        f"것은 계열이 인자를 건드리는지 provider 해석을 건드리는지의 분할, 0에 가까운 세 칸, 표 3의 drift 취약성, "
+        f"그리고 그 셋이 남의 도구 표와 실제 SDK 전송에서도 재현된다는 사실이다. provider는 로컬 프로세스라 상용 "
+        f"SaaS의 tenant 격리와 최종 principal은 검증하지 않았고, 정상 트래픽도 합성이라 표 3은 재시도·locale·API "
+        f"버전 폐기 같은 장기 drift 전체를 대표하지 않는다.", st["body"]))
     add(table([["근거가 있는 주장", "근거가 없는 주장"],
-               ["열거한 계열에서 계약이 추가 신호를 준다", "미지 공격 일반 방어"],
-               ["열거하지 않은 계열에서 탐지가 거의 사라진다", "블랙박스 행동의 완전 증명"],
+               ["열거하지 않은 계열에서 탐지가 거의 사라진다", "미지 공격 일반 방어"],
                ["자기보고 영수증에서 계약이 무력하다", "상용 SaaS 독립성 검증 완료"],
                ["승인 해시 결합이 인자 사각지대를 닫는다", "해시 결합이 모든 변조를 막는다"],
                ["두 방식이 함께 놓치는 경로가 있다", "경로 검사를 더하면 사각지대가 없어진다"],

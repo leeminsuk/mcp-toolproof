@@ -188,8 +188,15 @@ def oracle_agreement(rows: list[dict]) -> dict:
             by_invariant[code] += 1
             if group:
                 by_group[group][code] += 1
+    import sys as _sys
+    _sys.path.insert(0, str(Path(__file__).resolve().parent))
+    from oracle import INVARIANTS
     return {
         "rows": len(rows),
+        # How many the state checker defines, which is what the paper names.
+        # The fired count below is a subset and must not be printed as "the
+        # number of invariants".
+        "invariants_defined": len(INVARIANTS),
         "disagreements": len(disagreements),
         "agreement": 1.0 - len(disagreements) / max(1, len(rows)),
         "examples": [{"tool": r["tool"], "family": r["family"], "state_checker": r["truth"],
@@ -233,6 +240,24 @@ def holdout_report(path: Path) -> dict:
     for detector in DETECTORS:
         out["fpr_excl_resubmit"][detector] = (
             sum(1 for r in benign if r["detectors"][detector]) / len(benign)) if benign else None
+    # How far the attack families keep their exact meaning on a foreign surface.
+    # Published schemas declare far fewer optional arguments than the tool table
+    # designed here, so two families degrade to a related but different form and
+    # the paper has to say so rather than let a reader assume otherwise.
+    table_path = path.parent / "holdout-tooltable.json"
+    if table_path.exists():
+        tools = json.loads(table_path.read_text(encoding="utf-8"))["tools"]
+        with_optional = [name for name, spec in tools.items()
+                         if set(spec["args"]) - set(spec["required"])]
+        multi_required = [name for name, spec in tools.items() if len(spec["required"]) > 1]
+        out["family_fidelity"] = {
+            "tools": len(tools),
+            "with_optional_args": len(with_optional),
+            "multi_required": len(multi_required),
+            "note": ("선언됐지만 required가 아닌 인자가 있는 도구에서만 C 계열이 원래 형태를 유지한다. "
+                     "나머지 도구에서는 schema가 선언한 적 없는 필드를 주입하므로 더 강한 변형이 되고, "
+                     "필수 인자가 하나뿐인 도구에서는 값 변조가 대상 치환과 같아진다."),
+        }
     out["by_server"] = {}
     for server in sorted({r["tool"].split(".")[0] for r in rows}):
         part = [r for r in attacks if r["tool"].startswith(server + ".")]
@@ -661,6 +686,49 @@ def main() -> None:
     if args.holdout and args.holdout.exists():
         report["holdout"] = holdout_report(args.holdout)
 
+    # Every row this study produced, and every place a subset rather than the
+    # whole was used.  A reader should not have to reconstruct which denominator
+    # a number came from, and "nothing was dropped" is itself a claim that has
+    # to be checked rather than assumed.
+    report["exclusions"] = [
+        {"suite": "본 행렬", "produced": len(rows), "used": len(rows),
+         "excluded": 0, "reason": "실패·타임아웃 없음. 전 행이 분석에 들어간다"},
+        {"suite": "본 행렬 → 그룹별 표", "produced": len(rows), "used": len(independent),
+         "excluded": len(self_report),
+         "reason": "자기보고 관측면은 5.1 절제에서만 쓴다. 제외가 아니라 관측면 분리"},
+        {"suite": "본 행렬 → FPR", "produced": report["benign_independent"],
+         "used": report["sample_decomposition"]["benign_excl_resubmit"],
+         "excluded": (report["benign_independent"]
+                      - report["sample_decomposition"]["benign_excl_resubmit"]),
+         "reason": "승인된 재제출은 숨은 복제와 관측이 같다. 포함·제외 두 값을 모두 보고한다"},
+    ]
+    if "holdout" in report:
+        hold = report["holdout"]
+        report["exclusions"].append({
+            "suite": "hold-out", "produced": hold["rows"], "used": hold["independent"],
+            "excluded": hold["rows"] - hold["independent"],
+            "reason": "본 행렬과 같은 관측면 분리"})
+        meta = hold.get("meta", {})
+        published = sum(p["published_tools"] for p in meta.get("provenance", []))
+        kept = sum(p["kept"] for p in meta.get("provenance", []))
+        report["exclusions"].append({
+            "suite": "hold-out 도구", "produced": published, "used": kept,
+            "excluded": published - kept,
+            "reason": "required 속성이 없는 도구는 계약을 유도할 수 없어 변환 규칙 1에서 제외"})
+    if "real_mcp" in report:
+        real = report["real_mcp"]
+        report["exclusions"].append({
+            "suite": "공식 SDK", "produced": real["rows"], "used": real["clean_rows"],
+            "excluded": real["rows"] - real["clean_rows"],
+            "reason": "장애 주입 행은 탐지율이 아니라 부록 10.1의 가용성 분리에만 쓴다"})
+    if "llm_local" in report:
+        llm = report["llm_local"]
+        report["exclusions"].append({
+            "suite": "에이전트 루프", "produced": llm["rows"], "used": llm["valid"],
+            "excluded": llm["errors"],
+            "reason": "도구 호출이 정확히 하나이고 배정 도구와 같을 때만 유효. "
+                      "오류 내역: " + ", ".join(f"{k} {v}" for k, v in
+                                              list(llm["error_kinds"].items())[:3])})
     report["gates"] = evaluate_gates(report)
     problems = check_consistency(report)
     report["consistency"] = {"checked": True, "problems": problems}

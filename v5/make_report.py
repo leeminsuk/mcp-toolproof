@@ -89,6 +89,17 @@ def fmt(value, digits=3):
     return "—" if value is None else f"{value:.{digits}f}"
 
 
+def _pearson(xs: list[float], ys: list[float]) -> float:
+    """Computed here rather than typed in, so the caption cannot outlive the
+    data it describes."""
+    n = len(xs)
+    mx, my = sum(xs) / n, sum(ys) / n
+    cov = sum((x - mx) * (y - my) for x, y in zip(xs, ys))
+    vx = sum((x - mx) ** 2 for x in xs) ** 0.5
+    vy = sum((y - my) ** 2 for y in ys) ** 0.5
+    return cov / (vx * vy) if vx and vy else 0.0
+
+
 def build(a: dict, st: dict, width: float, heatmap: Path) -> list:
     dec = a["sample_decomposition"]
     grp, cig = a["by_group"], a["ci95_by_group"]
@@ -193,6 +204,12 @@ def build(a: dict, st: dict, width: float, heatmap: Path) -> list:
         "I10": "승인 요청 digest가 영수증의 승인 해시와 같다",
         "I11": "선언된 릴리스 태그 외의 주석이 없다",
     }
+    # The table must list every invariant the checker defines, not a snapshot
+    # of the ones that happened to fire, so a new invariant cannot go unlisted.
+    import oracle as _O
+    defined = [code for code, _name, _desc in _O.INVARIANTS]
+    if defined != list(INV_TEXT):
+        raise SystemExit(f"oracle defines {defined} but the appendix lists {list(INV_TEXT)}")
     for code, text in INV_TEXT.items():
         inv_rows.append([code, text, f"{orc['invariants_fired'].get(code, 0):,}"])
     add(table(inv_rows, [width * 0.08, width * 0.72, width * 0.20], st, align_right=(2,)))
@@ -210,9 +227,8 @@ def build(a: dict, st: dict, width: float, heatmap: Path) -> list:
         "한계도 분명히 적는다. 두 구현의 일치는 라벨이 한 코드 경로에 의존하지 않는다는 뜻이지 라벨이 참이라는 "
         "뜻이 아니다. 두 구현 모두 같은 저자가 썼고, 오라클이 ‘무엇을 의미로 볼 것인가’를 정한 선택 자체에 저자의 "
         "관점이 들어 있다. 남은 편향을 없애려면 제3자가 작성한 공격 또는 공격과 독립으로 작성된 계약이 필요하다. "
-        "후자는 8절의 공개 스키마 hold-out에서 부분적으로 확보했다.", st["body"]))
+        "후자는 9절의 공개 스키마 hold-out에서 부분적으로 확보했다.", st["body"]))
 
-    add(PageBreak())
     add(Paragraph("4. 계열별 전량 결과", st["h"]))
     add(Paragraph(
         "열 이름은 논문 표 4의 방어와 같고, v4+와 승인+는 각각 정규화 미상 v4와 직렬화 미상 승인 결합 절제판이다.",
@@ -297,14 +313,17 @@ def build(a: dict, st: dict, width: float, heatmap: Path) -> list:
                      f"{v['runs']}", fmt(v["recall_v3"]), fmt(v["recall_v4"])])
     add(table(rows, [width * 0.22, width * 0.11, width * 0.11, width * 0.12, width * 0.12,
                      width * 0.16, width * 0.16], st, align_right=(1, 2, 3, 4, 5, 6)))
+    fz = a["fuzz_by_tool"]
+    corr = _pearson([fz[t]["share"] for t in sorted(fz)],
+                    [fz[t]["recall_v4"] or 0.0 for t in sorted(fz)])
     add(Paragraph(
-        "표 A7. 퍼징은 도구가 선언한 인자 중 하나를 요청에서 만든 seed로 골라 변형한다. 계약 작성자가 어느 인자가 "
-        "뽑힐지 예측할 수 없다는 점이 이 계열의 목적이고, 같은 입력에서는 같은 선택이 재현된다. 열거 비율이 낮은 "
-        "도구에서 Recall도 낮은 경향이 보이지만 도구 8종에서 Pearson r=0.586(p≈0.13)이므로 방향만 보고한다.",
+        f"표 A7. 퍼징은 도구가 선언한 인자 중 하나를 요청에서 만든 seed로 골라 변형한다. 계약 작성자가 어느 인자가 "
+        f"뽑힐지 예측할 수 없다는 점이 이 계열의 목적이고, 같은 입력에서는 같은 선택이 재현된다. 열거 비율이 낮은 "
+        f"도구에서 Recall도 낮은 경향이 보이지만 표본이 도구 {len(fz)}종뿐이고 상관계수도 r={corr:.3f}에 그치므로 "
+        f"방향만 보고하고 인과로 단정하지 않는다. 이 값은 표에서 자동 계산되므로 재실행 때마다 함께 갱신된다.",
         st["cap"]))
 
     if drift:
-        add(PageBreak())
         add(Paragraph("8. provider 변화(drift) 전량", st["h"]))
         add(Paragraph(
             "계약을 동결한 뒤 provider만 바뀌는 상황을 정상 트래픽만으로 재현했다. 공격이 없으므로 오라클은 모든 "
@@ -342,8 +361,7 @@ def build(a: dict, st: dict, width: float, heatmap: Path) -> list:
 
     hold = a.get("holdout")
     if hold:
-        add(PageBreak())
-        add(Paragraph("8b. 공개 MCP 서버 스키마 hold-out", st["h"]))
+        add(Paragraph("9. 공개 MCP 서버 스키마 hold-out", st["h"]))
         prov = hold["meta"]["provenance"]
         add(Paragraph(
             "본 행렬은 도구·공격·계약을 한 저자가 만든 테스트베드다. 이 절은 그중 <b>도구와 계약</b>을 바깥에서 "
@@ -393,6 +411,27 @@ def build(a: dict, st: dict, width: float, heatmap: Path) -> list:
             "표 A8d. 서버별 분해. 세 서버는 도메인도 인자 형태도 다르지만(파일 경로, 지식 그래프 엔티티, 참조 "
             "구현 도구) 값이 비슷한 자리에 모인다. 결과가 특정 도구 도메인의 성질이 아니라 열거 범위의 성질임을 "
             "시사한다.", st["cap"]))
+        fid = hold.get("family_fidelity")
+        if fid:
+            add(Paragraph("9.1 계열이 남의 스키마에서 뜻을 얼마나 유지하는가", st["h2"]))
+            add(Paragraph(
+                f"공개 스키마는 <b>선언은 하되 required가 아닌 인자</b>를 거의 두지 않는다. 본 테스트베드가 "
+                f"memo·tenant·callback_url을 일부러 그렇게 둔 것과 다르다. 그래서 두 계열이 형태를 바꾼다.",
+                st["body"]))
+            add(table([["관측", "값", "결과"],
+                       ["hold-out 도구", f"{fid['tools']}", "—"],
+                       ["선언됐지만 required가 아닌 인자를 가진 도구", f"{fid['with_optional_args']}",
+                        "이 도구에서만 C 계열(비열거 필드·tenant 침범·memo 유출)이 원래 형태를 "
+                        "유지한다. 나머지에서는 schema가 선언한 적조차 없는 필드를 주입하므로 "
+                        "<b>더 강한 변형</b>이 된다"],
+                       ["required가 둘 이상인 도구", f"{fid['multi_required']}",
+                        "이 도구에서만 값 변조가 대상 치환과 구별된다. 나머지에서는 두 계열이 "
+                        "사실상 같아진다(그룹 A는 어차피 구성적이라 결론에 영향이 없다)"]],
+                      [width * 0.34, width * 0.08, width * 0.58], st, align_right=(1,)))
+            add(Paragraph(
+                "표 A8e. 계열 충실도. C 그룹의 대비(값 대조 0에 가깝고 승인 결합 1.00)가 hold-out에서도 유지되는 "
+                "것은 <b>두 경우 모두 계약이 그 필드를 보지 않기 때문</b>이지 계열이 동일하기 때문이 아니다. "
+                "이 구분을 흐리면 hold-out이 실제보다 강한 증거로 읽힌다.", st["cap"]))
         add(Paragraph(
             "이 절이 없애지 못하는 것도 적는다. 공격은 여전히 본 연구가 썼고, 발행 스키마를 도구 표로 옮기는 네 "
             "규칙도 본 연구가 정했다. 그리고 이 서버들의 실제 구현이 아니라 <b>발행 schema만</b> 가져왔으므로, "
@@ -401,8 +440,7 @@ def build(a: dict, st: dict, width: float, heatmap: Path) -> list:
 
     real = a.get("real_mcp")
     if real:
-        add(PageBreak())
-        add(Paragraph("9. 실제 프로토콜 경계: 공식 MCP SDK와 전송 장애", st["h"]))
+        add(Paragraph("10. 실제 프로토콜 경계: 공식 MCP SDK와 전송 장애", st["h"]))
         add(Paragraph(
             "본 행렬은 목적에 맞게 지은 로컬 HTTP 테스트베드 위에서 돈다. 이 절은 같은 공격기·같은 오라클·같은 "
             "계약을 <b>공식 MCP Python SDK의 stdio 전송</b> 위로 옮겨 다시 측정한 것이다. 서버는 별도 OS "
@@ -442,7 +480,7 @@ def build(a: dict, st: dict, width: float, heatmap: Path) -> list:
             "위에서도 그대로 성립하고, 조건부 발동이 승인 probe를 통과한다는 것까지가 이 표본이 말하는 전부다.",
             st["cap"]))
         if real.get("faults"):
-            add(Paragraph("9.1 전송 장애와 의미 이탈을 가르는 법", st["h"]))
+            add(Paragraph("10.1 전송 장애와 의미 이탈을 가르는 법", st["h"]))
             add(Paragraph(
                 "운영에서 두 가지는 같은 증상으로 도착한다. 영수증이 없다. 도구 서버와 provider 사이에 세 가지 "
                 "장애를 정상 트래픽에 주입해 구별 가능한지 측정했다.", st["body"]))
@@ -466,8 +504,7 @@ def build(a: dict, st: dict, width: float, heatmap: Path) -> list:
 
     llm = a.get("llm_local") or a.get("llm")
     if llm:
-        add(PageBreak())
-        add(Paragraph("10. 에이전트 루프: 재현 정보와 예비 관찰", st["h"]))
+        add(Paragraph("11. 에이전트 루프: 재현 정보와 예비 관찰", st["h"]))
         cfg = llm.get("config", {})
         if cfg:
             add(table([["항목", "값"],
@@ -522,7 +559,7 @@ def build(a: dict, st: dict, width: float, heatmap: Path) -> list:
             "탐지기를 논하기 전에 에이전트 계층이 먼저 실패하는 구간이 존재하고, 그 구간의 크기가 모델 선택에 따라 "
             "달라진다.", st["body"]))
 
-    add(Paragraph("11. 사전 기준 판정", st["h"]))
+    add(Paragraph("12. 사전 기준 판정", st["h"]))
     rows = [["기준", "임계", "관측", "판정"]]
     for gate in a["gates"]:
         unit = f" {gate['unit']}" if gate.get("unit") else ""
@@ -539,7 +576,23 @@ def build(a: dict, st: dict, width: float, heatmap: Path) -> list:
         "깨진다는 정의에서 따라 나오는 구성적 결과다.", st["cap"]))
 
     problems = a.get("consistency", {}).get("problems", [])
-    add(Paragraph("12. 자동 정합성 검사", st["h"]))
+    if a.get("exclusions"):
+        add(Paragraph("12.1 실패·제외 감사", st["h2"]))
+        add(Paragraph(
+            "어느 수치가 어느 분모에서 나왔는지를 독자가 되짚지 않아도 되게, 각 스위트가 만든 행 수와 실제로 쓴 행 "
+            "수를 전부 적는다. ‘아무것도 버리지 않았다’ 역시 확인해야 할 주장이지 전제가 아니다.", st["body"]))
+        rows = [["스위트", "생성", "사용", "제외", "사유"]]
+        for entry in a["exclusions"]:
+            rows.append([entry["suite"], f"{entry['produced']:,}", f"{entry['used']:,}",
+                         f"{entry['excluded']:,}", entry["reason"]])
+        add(table(rows, [width * 0.17, width * 0.09, width * 0.09, width * 0.08, width * 0.57],
+                  st, align_right=(1, 2, 3)))
+        add(Paragraph(
+            "표 A14b. 실패·제외 감사. 결정적 스위트에서는 실패·타임아웃이 없었고 제외도 없다. 나머지 줄은 버린 "
+            "데이터가 아니라 <b>어느 부분집합을 어떤 목적에 썼는지</b>의 기록이며, 각 줄의 ‘사용’ 값이 본문 표의 "
+            "분모다. 에이전트 루프만 실제 실패가 있고, 그 실패 자체가 5.8의 결과다.", st["cap"]))
+
+    add(Paragraph("13. 자동 정합성 검사", st["h"]))
     add(Paragraph(
         "심사자가 손으로 잡아야 했던 종류의 오류를 스크립트가 먼저 잡도록 다음 검사를 매 실행에 넣었다. "
         "(가) 모든 그룹·탐지기 조합에서 점추정이 자기 부트스트랩 구간 안에 드는가, (나) 그룹별 공격 실행 수의 "
@@ -550,7 +603,7 @@ def build(a: dict, st: dict, width: float, heatmap: Path) -> list:
         f"현재 실행 결과: <b>{'문제 없음' if not problems else '문제 ' + str(len(problems)) + '건'}</b>"
         + ("" if not problems else "<br/>" + "<br/>".join(problems)), st["body"]))
 
-    add(Paragraph("13. 재현 정보", st["h"]))
+    add(Paragraph("14. 재현 정보", st["h"]))
     freeze = json.loads((ART / "freeze.json").read_text(encoding="utf-8"))
     rows = [["항목", "값"]]
     for key in ("contract_sha256", "manifest_sha256", "learned_profile_sha256",
@@ -566,7 +619,7 @@ def build(a: dict, st: dict, width: float, heatmap: Path) -> list:
                   "돌기 전에 freeze.json에 기록된다.", st["cap"]))
     rel = a.get("release", {})
     if rel:
-        add(Paragraph("13.1 공개 위치와 실행 명령", st["h2"]))
+        add(Paragraph("14.1 공개 위치와 실행 명령", st["h2"]))
         add(Paragraph(
             f"코드·원시 JSONL 로그·분석 스크립트를 <font face='Courier'>{rel['repository']}</font> 에 공개한다. "
             f"본 문서와 논문의 수치는 커밋 <font face='Courier'>{rel['commit']}</font> 에서 생성됐다. "
@@ -584,7 +637,7 @@ def build(a: dict, st: dict, width: float, heatmap: Path) -> list:
             "라벨 불일치, 점추정의 구간 이탈, 표본 합계 불일치, 사전 기준 판정 불일치 가운데 하나라도 발견하면 "
             "종료 코드 1로 끝나고 PDF 생성을 막는다.", st["cap"]))
 
-    add(Paragraph("14. 이 문서가 뒷받침하지 않는 것", st["h"]))
+    add(Paragraph("15. 이 문서가 뒷받침하지 않는 것", st["h"]))
     add(table([["근거가 있는 주장", "근거가 없는 주장"],
                ["열거한 계열에서 계약이 추가 신호를 준다", "미지 공격에 대한 일반 방어"],
                ["열거하지 않은 계열에서 탐지가 거의 사라진다", "블랙박스 도구 행동의 완전 증명"],
