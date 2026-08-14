@@ -290,7 +290,11 @@ def build_story(a: dict, st: dict, figures: dict, width: float) -> list:
         "바이트도 바꾸지 않는 동기도 여기서 나온다. 선행 연구는 대부분 실행 이전을 본다. MCPTox[3]는 도구 설명과 "
         "schema 오염을, Confused Deputy[2]는 권한 위임과 도구 선택을, DCI[7]는 설명과 코드의 정적 불일치를 관측하고, "
         "국내 연구[8-12]는 위협 분류·CVE·최소권한·SBOM으로 필요성을 뒷받침하되 실행 후 외부 효과를 정답으로 두지 "
-        "않는다.", st["body"]))
+        "않는다. 규범 쪽도 같다. 공식 MCP 보안 문서[1]의 ‘공격과 완화’ 절은 항목 11개(혼동된 대리인, 토큰 "
+        "패스스루, SSRF, 상태 핸들 탈취, 로컬 서버 침해, OAuth URL 검증, stdio 프록시 권한상승, mix-up, localhost "
+        "리다이렉트 사칭, CIMD 신뢰 정책, 스코프 최소화)를 열거하는데 <b>전부 인가·전송·프록시 계층이고, 인가된 "
+        "서버가 승인된 것과 다른 효과를 실행하는 경우는 한 항목도 없다.</b> 본 연구가 다루는 것이 그 자리다.",
+        st["body"]))
 
     add(Paragraph("2. 위협 모델과 테스트베드", st["h"]))
     add(Paragraph(
@@ -569,13 +573,10 @@ def build_story(a: dict, st: dict, figures: dict, width: float) -> list:
         fid = hold.get("family_fidelity")
         if fid:
             add(Paragraph(
-                f"계열이 남의 스키마에서 뜻을 그대로 유지하지는 않는다는 점은 적어 둔다. 공개 스키마는 선언은 "
-                f"하되 required가 아닌 인자를 거의 두지 않아서, 도구 {fid['tools']}종 중 "
-                f"{fid['with_optional_args']}종에서만 C 계열이 원래 형태(선언됐지만 계약이 열거하지 않는 인자)를 "
-                f"유지한다. 나머지에서는 schema가 선언한 적조차 없는 필드를 주입하므로 더 강한 변형이 되고, 필수 "
-                f"인자가 하나뿐인 {fid['tools'] - fid['multi_required']}종에서는 값 변조가 대상 치환과 같아진다. "
-                f"C의 대비가 유지되는 것은 두 경우 모두 계약이 그 필드를 보지 않기 때문이지, 계열이 동일하기 "
-                f"때문은 아니다.", st["body"]))
+                f"계열이 뜻을 그대로 유지하지는 않는다. 공개 스키마는 선언만 하고 required가 아닌 인자를 거의 두지 "
+                f"않아서, 도구 {fid['tools']}종 중 {fid['with_optional_args']}종에서만 C 계열이 원래 형태를 "
+                f"유지하고 나머지에서는 schema가 선언한 적조차 없는 필드를 주입한다. C의 대비가 유지되는 것은 두 "
+                f"경우 모두 계약이 그 필드를 보지 않기 때문이지 계열이 같아서가 아니다.", st["body"]))
 
     if real:
         add(Paragraph("5.6 실제 MCP 전송 위에서, 그리고 전송 장애와 구별해서", st["h"]))
@@ -679,7 +680,9 @@ def build_story(a: dict, st: dict, figures: dict, width: float) -> list:
         f"정답 라벨을 코드를 공유하지 않는 두 구현으로 계산해 {orc['rows'] + hold['oracle']['rows']:,}행 전부에서 "
         f"일치를 확인했으며(2.1), 계약과 학습 프로파일을 평가 전에 해시로 동결했다. 그래도 남는 것이 있다. 공격은 "
         f"여전히 본 연구가 썼고, 두 오라클 구현도 같은 저자의 것이며, 동결은 이후 변경을 막을 뿐 계약 작성이 공격 "
-        f"작성보다 앞섰다는 순서를 증명하지 않는다. 제3자가 쓴 공격이나 blind 계약 작성이 다음 단계다. 실제로 측정된 "
+        f"작성보다 앞섰다는 순서를 증명하지 않는다. 공격 계열을 공개 분류체계에서 그대로 가져와 편향을 줄이는 길은 "
+        f"막혀 있다. 1절에서 보였듯 효과 수준 이탈을 열거한 공개 분류가 없기 때문이고, 그 부재가 이 연구의 자리이자 "
+        f"이 한계의 이유다. 제3자가 쓴 공격이나 blind 계약 작성이 다음 단계다. 실제로 측정된 "
         f"것은 계열이 인자를 건드리는지 provider 해석을 건드리는지의 분할, 0에 가까운 세 칸, 표 3의 drift 취약성, "
         f"그리고 그 셋이 남의 도구 표와 실제 SDK 전송에서도 재현된다는 사실이다. provider는 로컬 프로세스라 상용 "
         f"SaaS의 tenant 격리와 최종 principal은 검증하지 않았고, 정상 트래픽도 합성이라 표 3은 재시도·locale·API "
@@ -712,7 +715,7 @@ def build_story(a: dict, st: dict, figures: dict, width: float) -> list:
 
     add(Paragraph("참고문헌", st["h"]))
     add(Paragraph(
-        "[1] Model Context Protocol, “Tools; Security Best Practices,” modelcontextprotocol.io, 2026 (accessed 2026-08-14).<br/>"
+        "[1] Model Context Protocol, “Security Best Practices,” specification/draft/basic/security_best_practices, modelcontextprotocol.io, 2026 (accessed 2026-08-14).<br/>"
         "[2] Z. Li et al., “Confused Deputy Attack Against Model Context Protocol,” ACM TOSEM, doi:10.1145/3830467, 2026.<br/>"
         "[3] Z. Wang et al., “MCPTox: A Benchmark for Tool Poisoning on Real-World MCP Servers,” AAAI 40(42), 35811–35819, 2026.<br/>"
         "[4] S. Yergattikar, “Securing the Tool Layer: A Threat Taxonomy and Runtime Defense Framework for MCP Deployments,” ACL Industry Track, 2026.<br/>"

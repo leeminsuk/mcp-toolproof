@@ -649,6 +649,32 @@ def build(a: dict, st: dict, width: float, heatmap: Path) -> list:
               [width * 0.5, width * 0.5], st))
     add(Paragraph("표 A16. 주장 경계. 왼쪽은 이 표본이 뒷받침하는 문장이고, 오른쪽은 같은 표본으로 말할 수 없는 "
                   "문장이다.", st["cap"]))
+
+    add(Paragraph("15.1 공격 계열을 공개 분류체계에서 가져오지 못한 이유", st["h2"]))
+    add(Paragraph(
+        "심사가 지적한 공동설계 편향 가운데 <b>공격 작성</b>은 아직 해소하지 못했다. 계열을 공개 분류체계에서 그대로 "
+        "가져오면 될 것 같지만, 확인해 보면 그런 분류가 없다. 공식 MCP 보안 문서"
+        "(<font face='Courier'>modelcontextprotocol.io/specification/draft/basic/security_best_practices</font>, "
+        "2026-08-14 접속)의 ‘Attacks and Mitigations’ 절은 아래 11개 항목을 열거하는데, <b>전부 인가·전송·프록시 "
+        "계층</b>이다.", st["body"]))
+    add(table([["공식 문서 항목", "다루는 계층"],
+               ["Confused Deputy Problem", "OAuth 위임·동의"],
+               ["Token Passthrough", "토큰 audience 검증"],
+               ["Server-Side Request Forgery (SSRF)", "클라이언트의 URL 조회"],
+               ["State Handle Hijacking", "상태 핸들 인가"],
+               ["Local MCP Server Compromise", "로컬 실행·샌드박싱"],
+               ["OAuth Authorization URL Validation", "URL 스킴 → XSS·RCE"],
+               ["stdio Transport Security in Proxy Scenarios", "프록시 권한 상승"],
+               ["Mix-Up Attacks", "인가 서버 혼동"],
+               ["Localhost Redirect URI Impersonation", "리다이렉트 사칭"],
+               ["CIMD Trust Policies", "클라이언트 신뢰 정책"],
+               ["Scope Minimization", "최소권한 스코프"]],
+              [width * 0.52, width * 0.48], st))
+    add(Paragraph(
+        "표 A17. 공식 MCP 보안 문서가 열거하는 공격·완화 항목. <b>인가된 서버가 승인된 것과 다른 효과를 실행하는 "
+        "경우는 한 항목도 없다.</b> 이 부재가 본 연구의 자리이면서, 동시에 공격 계열을 남의 분류에서 빌려 올 수 없는 "
+        "이유다. 따라서 ‘공격도 저자가 썼다’는 한계는 이 판에서 해소되지 않았고, 제3자가 작성한 공격 집합이 다음 "
+        "단계다. 계약 쪽은 9절의 hold-out에서 발행자의 required 목록으로 대체해 부분적으로 해소했다.", st["cap"]))
     return story
 
 
