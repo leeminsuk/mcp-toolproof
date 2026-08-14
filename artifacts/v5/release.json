@@ -1,8 +1,8 @@
 {
   "repository": "https://github.com/leeminsuk/mcp-toolproof",
-  "commit": "55c5dba4ed142482685087a1cdd45234a0d16a3b",
-  "commit_short": "55c5dba",
-  "dirty": true,
+  "commit": "6bbca6697022148f9a7c2db530e29c55c1b50e1f",
+  "commit_short": "6bbca66",
+  "dirty": false,
   "python": "Python 3.14.6",
   "commands": [
     "v5/run_suites.sh                                    # 13,824행 본 행렬 + drift 5종",
@@ -37,9 +37,9 @@
     },
     {
       "file": "artifacts/v5/llm-local-suite.jsonl",
-      "bytes": 1391,
-      "rows": 5,
-      "sha256": "52f776ed87d6173e1c48a980a42324b58ab018b3615a3e8ba4cbee2de7abaf1d"
+      "bytes": 910936,
+      "rows": 1008,
+      "sha256": "385418616abca6aaabc252257f479161ba2ab4f5a82800073641edeedb146e6c"
     },
     {
       "file": "artifacts/v5/drift-none.jsonl",
@@ -73,9 +73,9 @@
     },
     {
       "file": "artifacts/v5/analysis.json",
-      "bytes": 64236,
+      "bytes": 67215,
       "rows": null,
-      "sha256": "2f89542208c38cc5c0bd3f751e59ce7a4b156d083934fdaf912013f8fb84ec6b"
+      "sha256": "789c726b6cca5d1c11da30c16b5dfae5953d15844833d963f4b60660bda89387"
     },
     {
       "file": "artifacts/v5/freeze.json",
@@ -157,19 +157,31 @@
     },
     {
       "file": "v5/analyze.py",
-      "sha256": "bce0497c6eaf3ef954f20f27f66575e45564b84ea51c6326f19fc1e57fe3bc1f"
+      "sha256": "a044d4e58bc56a15e55e648261243d8a21e72c33e1e3987679a70f91d925e619"
     },
     {
       "file": "v5/make_paper.py",
-      "sha256": "498ff01eebb516f2bbf98448e0a078170db410d2d4c151951b50b40eb0c44269"
+      "sha256": "b62f5cba670bb856c1abc0815be554e06f3179effb3c8d1c014477e843ae8668"
     },
     {
       "file": "v5/make_report.py",
-      "sha256": "8a4973ee985aa48084cddaa7b0f7e1c2502f3c05ddbd3a025300345e7d44b35f"
+      "sha256": "6202cda2657bca2dc47f3966ca8b1b0e8141cd14ee8f259f519902087eddac40"
     },
     {
       "file": "v5/make_release.py",
-      "sha256": "c2bcc814dbdd9c60645989cd9fd7b8a2d75d70351273e95c75651d5d5ff5295d"
+      "sha256": "f8d750f89ef3212cadf491da81323e185bd2602fa9ef1665908cc0cc3bc9b8b5"
+    },
+    {
+      "file": "requirements.txt",
+      "sha256": "bda7ab533d2ee8baa8571be663f7b1f97b6a35e9c6836ea919797ba099fc1877"
+    },
+    {
+      "file": "requirements-mcp.txt",
+      "sha256": "78c69b7c5a2b4f9ebde1890ed3bc4fb5c5bb04dcb3f2c5d2dae573c017eaf606"
+    },
+    {
+      "file": "tests/test_v5.py",
+      "sha256": "834142aecb2a8bf95aaecac1f68fadeebae1cca32b55f9aad0e27660a87b24da"
     }
   ]
 }

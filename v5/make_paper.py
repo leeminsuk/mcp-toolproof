@@ -194,12 +194,14 @@ _CONSONANT_FINAL = set("013678")
 
 
 def jo(text: str, pair: str) -> str:
-    """``pair`` is the consonant-final form followed by the vowel-final form,
-    e.g. ``jo(x, "은는")`` -> "은" after 0.000, "는" after 0.769."""
+    """``pair`` is "consonant-final form/vowel-final form", e.g.
+    ``jo(x, "은/는")`` -> "은" after 0.000, "는" after 0.769.  The two forms are
+    not always one character each ("으로/로"), so they are separated explicitly
+    rather than split down the middle."""
+    consonant_form, vowel_form = pair.split("/")
     digits = [c for c in text if c.isdigit()]
     consonant = bool(digits) and digits[-1] in _CONSONANT_FINAL
-    half = len(pair) // 2
-    return pair[:half] if consonant else pair[half:]
+    return consonant_form if consonant else vowel_form
 
 
 def num(value: float, pair: str, digits: int = 3) -> str:
@@ -253,15 +255,15 @@ def build_story(a: dict, st: dict, figures: dict, width: float) -> list:
         f"{orc['rows'] + hold['oracle']['rows']:,}행 전부에서 일치했다. 결정적 실행 {dec['rows']:,}회에서, 필드를 "
         f"열거해 값을 대조하는 계약의 Recall은 계약이 검사하는 인자·효과에서 {pct(both['extended_intent'], 2)}, "
         f"provider 해석·메타데이터에서 {pct(v4only['extended_intent'], 3)}, 계약이 검사하지 않는 인자에서 "
-        f"{num(neither['extended_intent'], '이고가')}, 승인 요청 전체를 해시로 묶는 영수증은 같은 순서로 "
+        f"{num(neither['extended_intent'], '이고/고')}, 승인 요청 전체를 해시로 묶는 영수증은 같은 순서로 "
         f"{pct(both['approval_bound'], 2)}, {pct(v4only['approval_bound'], 3)}, "
-        f"{num(neither['approval_bound'], '으로로')} 정반대의 사각지대를 갖는다. 두 1.00은 성능이 아니라 각 방식이 그 "
+        f"{num(neither['approval_bound'], '으로/로')} 정반대의 사각지대를 갖는다. 두 1.00은 성능이 아니라 각 방식이 그 "
         f"필드를 보기로 한 정의의 결과다. 영수증에 남지만 어느 계약도 열거하지 않는 처리 경로는 두 방식이 함께 놓쳐 "
         f"각각 {pct(unseen['extended_intent'], 3)}, {pct(unseen['approval_bound'], 3)}에 그쳤다. 같은 구조가 본 "
         f"연구와 무관하게 공개된 MCP 서버 {hold['tools']}개 도구 위에서 {hold['independent']:,}행으로 재현됐고"
         f"(계약은 발행자가 쓴 required 목록), 공식 MCP SDK 전송 위에서도 재현됐다. 낮은 오탐도 무조건적이지 않다. "
         f"provider가 영수증에 릴리스 태그를 덧붙이는 변화 하나만으로 값 대조 계약의 오탐이 "
-        f"{num(drift.get('receipt_annotation', {}).get('fpr', {}).get('extended_intent', 0), '으로로', 2)} 뛴다. "
+        f"{num(drift.get('receipt_annotation', {}).get('fpr', {}).get('extended_intent', 0), '으로/로', 2)} 뛴다. "
         f"경계는 없어지지 않고 자리를 옮긴다.", st["body"]))
 
     add(Paragraph("1. 서론", st["h"]))
@@ -417,11 +419,11 @@ def build_story(a: dict, st: dict, figures: dict, width: float) -> list:
     add(Paragraph(
         f"공격 비율은 {100 * a['attacks_independent'] / dec['per_observer']:.1f}%이며 운영 기저율은 5.7에서 "
         f"재가중한다. 전 계열 집계는 계열 구성비의 함수이므로 싣지 않는다. v3가 B에서 보이는 "
-        f"{num(v4only['frozen_intent'], '은는')} 같은 표본의 FPR {num(clean_fpr['frozen_intent'], '과와')} 구별되지 "
+        f"{num(v4only['frozen_intent'], '은/는')} 같은 표본의 FPR {num(clean_fpr['frozen_intent'], '과/와')} 구별되지 "
         f"않으므로 탐지 신호로 읽지 않는다. manifest pin과 서명 manifest의 Recall 0도 미구현이 아니라 두 센서가 보는 "
         f"대상이 바뀌지 않았기 때문이다. 같은 표본에서 manifest pin은 정상 migration에만 FPR "
-        f"{num(pin['by_family']['migration']['fpr'], '으로로', 2)} 발화하므로 배선은 살아 있고, 표 2의 "
-        f"{num(clean_fpr['manifest_pin'], '은는')} 재제출을 뺀 정상 {dec['benign_excl_resubmit']:,}행 가운데 migration "
+        f"{num(pin['by_family']['migration']['fpr'], '으로/로', 2)} 발화하므로 배선은 살아 있고, 표 2의 "
+        f"{num(clean_fpr['manifest_pin'], '은/는')} 재제출을 뺀 정상 {dec['benign_excl_resubmit']:,}행 가운데 migration "
         f"{fam['migration']['benign']:,}행에서만 전부 발화한 결과 "
         f"{fam['migration']['benign']:,}/{dec['benign_excl_resubmit']:,}이다. 응답 검사는 서버가 승인값을 그대로 "
         f"되돌려 주는 한 0을 유지한다. 응답 검사가 신호를 얻으려면 응답이 서버가 아니라 provider에서 와야 하며, "
@@ -431,13 +433,13 @@ def build_story(a: dict, st: dict, figures: dict, width: float) -> list:
     add(Paragraph(
         f"영수증 출처만 provider에서 서버 자기보고로 바꾸고 나머지를 고정하면, 두 계약이 모두 열거하는 A 그룹에서 "
         f"v4 Recall이 {pct(both['extended_intent'], 2)}에서 "
-        f"{num(s_group['both']['recall']['extended_intent'], '으로로')}, v3가 {pct(both['frozen_intent'], 2)}에서 "
-        f"{num(s_group['both']['recall']['frozen_intent'], '으로로')} 떨어지고 승인 결합도 "
-        f"{num(s_group['both']['recall']['approval_bound'], '이가')} 된다. 이 결과는 측정이라기보다 정리의 시연이다. "
+        f"{num(s_group['both']['recall']['extended_intent'], '으로/로')}, v3가 {pct(both['frozen_intent'], 2)}에서 "
+        f"{num(s_group['both']['recall']['frozen_intent'], '으로/로')} 떨어지고 승인 결합도 "
+        f"{num(s_group['both']['recall']['approval_bound'], '이/가')} 된다. 이 결과는 측정이라기보다 정리의 시연이다. "
         f"관측면을 공격자가 통제하면 공격자는 승인된 값을 그대로 보고할 수 있고, 값 비교로 만든 어떤 계약도 위반을 "
         f"볼 수 없다. 본 구현의 자기보고 서버는 provider와 동일한 정규화로 승인값을 되돌려 주므로 값·종류·개수·"
         f"principal이 모두 일치한다. 서명 검증을 켜면 자기보고 영수증의 "
-        f"{num(a['signature_rejects_self_report'], '이가', 2)} 무효로 걸리지만, 그 결과는 탐지가 아니라 가용성 판정이다. "
+        f"{num(a['signature_rejects_self_report'], '이/가', 2)} 무효로 걸리지만, 그 결과는 탐지가 아니라 가용성 판정이다. "
         f"provider 서명 없이 모은 영수증 위의 의미 계약은 두 번째 자기보고에 지나지 않는다.", st["body"]))
 
     add(Paragraph("5.2 열거 범위가 탐지 범위를 정한다", st["h"]))
@@ -445,8 +447,8 @@ def build_story(a: dict, st: dict, figures: dict, width: float) -> list:
         f"B 그룹에서 v4가 {pct(v4only['extended_intent'], 3)}인 것은 v4가 해석된 principal과 미지 영수증 필드를 새로 "
         f"열거했기 때문이지 규칙이 일반적으로 강해서가 아니다. 같은 B 안에서도 단위 교체가 "
         f"{pct(fam['unit_swap']['recall']['extended_intent'], 2)}에 머무는 것은 도구 8종 중 금액을 가진 둘만 단위를 "
-        f"열거하기 때문이다(그림 1). B와 C에서 v3가 보이는 {num(v4only['frozen_intent'], '과와')} "
-        f"{num(neither['frozen_intent'], '은는')} v3의 정상 FPR {num(clean_fpr['frozen_intent'], '과와')} 같은 크기다. "
+        f"열거하기 때문이다(그림 1). B와 C에서 v3가 보이는 {num(v4only['frozen_intent'], '과/와')} "
+        f"{num(neither['frozen_intent'], '은/는')} v3의 정상 FPR {num(clean_fpr['frozen_intent'], '과/와')} 같은 크기다. "
         f"원문 비교가 provider 정규화를 모르기 때문에 생기는 오경보가 공격 행에도 같은 비율로 떨어진 것이므로 탐지 "
         f"신호가 아니다. 같은 그룹 안에서 세 방어가 갈리는 값도 같은 이야기를 한다. A에서 궤적은 "
         f"{pct(both['trajectory_lite'], 3)}, 학습 관계는 {pct(both['learned_relation'], 3)}, 계약은 "
@@ -466,12 +468,12 @@ def build_story(a: dict, st: dict, figures: dict, width: float) -> list:
     add(Paragraph(
         f"필드를 열거하는 대신 승인 인자 전체를 해시로 묶으면 인자 공간의 사각지대가 사라진다. 승인 결합은 계약이 "
         f"검사하지 않는 인자 그룹(C)에서 {pct(neither['approval_bound'], 2)}, 무작위 인자(E)에서 "
-        f"{num(fuzz_rec['approval_bound'], '으로로', 2)} 값 대조 계약의 {pct(neither['extended_intent'], 3)}·"
+        f"{num(fuzz_rec['approval_bound'], '으로/로', 2)} 값 대조 계약의 {pct(neither['extended_intent'], 3)}·"
         f"{pct(fuzz_rec['extended_intent'], 3)}를 크게 앞선다. 반대로 provider 해석·메타데이터(B)에서는 "
-        f"{num(v4only['approval_bound'], '으로로')} 값 대조 계약의 {pct(v4only['extended_intent'], 3)}보다 낮다. 간접참조 "
+        f"{num(v4only['approval_bound'], '으로/로')} 값 대조 계약의 {pct(v4only['extended_intent'], 3)}보다 낮다. 간접참조 "
         f"해석과 메타데이터 채널은 인자를 하나도 바꾸지 않으므로 해시가 그대로다. 두 방식이 함께 놓치는 그룹이 D다. "
         f"별칭 체인, 정산 경로 우회, 정산 계정 교체 {grp['unseen']['attacks']:,}회에서 값 대조 계약은 "
-        f"{pct(unseen['extended_intent'], 3)}, 승인 결합은 {num(unseen['approval_bound'], '이며며')} 승인 결합의 "
+        f"{pct(unseen['extended_intent'], 3)}, 승인 결합은 {num(unseen['approval_bound'], '이며/며')} 승인 결합의 "
         f"클러스터 95% 구간은 [{pct(cig['unseen']['approval_bound'][0], 3)}, "
         f"{pct(cig['unseen']['approval_bound'][1], 3)}]다. provider가 영수증에 남기는 사실인데 어느 계약도 읽지 "
         f"않기 때문이다. 인자 공간은 해시로 닫을 수 있고 provider 해석은 열거로 닫을 수 있지만, 열거를 한 단계 늘리면 "
@@ -482,11 +484,11 @@ def build_story(a: dict, st: dict, figures: dict, width: float) -> list:
     add(Paragraph("5.4 낮은 오탐은 구현 합치와 provider 정지에 기댄다", st["h"]))
     add(Paragraph(
         f"값 대조 계약의 오탐 0은 검증자가 provider와 같은 정규화 함수를 쓴 결과다. 공백 제거만 하는 정규화로 다시 "
-        f"돌리면 FPR이 {pct(clean_fpr['extended_intent'], 3)}에서 {num(clean_fpr['extended_naive'], '으로로')} 오른다. "
+        f"돌리면 FPR이 {pct(clean_fpr['extended_intent'], 3)}에서 {num(clean_fpr['extended_naive'], '으로/로')} 오른다. "
         f"승인 결합도 마찬가지여서, 클라이언트가 해시 전에 문자열을 다듬고 provider는 원본을 해시하면 "
-        f"{pct(clean_fpr['approval_bound'], 3)}에서 {num(clean_fpr['approval_naive'], '으로로')} 오른다. 정규화 의존이 "
+        f"{pct(clean_fpr['approval_bound'], 3)}에서 {num(clean_fpr['approval_naive'], '으로/로')} 오른다. 정규화 의존이 "
         f"직렬화 의존으로 형태만 바뀐 것이다. 확장 계약의 오탐이 한 계열에서만 나오는 것도 같은 종류의 사실이다. "
-        f"사용자가 승인한 재제출에서 네 방어가 모두 FPR {num(fam['resubmit']['fpr']['extended_intent'], '으로로', 2)} "
+        f"사용자가 승인한 재제출에서 네 방어가 모두 FPR {num(fam['resubmit']['fpr']['extended_intent'], '으로/로', 2)} "
         f"경보하는데, 개수 규칙만으로는 숨은 복제와 정당한 재제출을 나눌 수 없기 때문이다. 개수 계약은 idempotency "
         f"키 정책과 함께 정의해야 한다.", st["body"]))
     if drift:
@@ -516,12 +518,12 @@ def build_story(a: dict, st: dict, figures: dict, width: float) -> list:
         d_hash = drift["hash_basis_change"]["fpr"]
         add(Paragraph(
             f"두 방식은 서로 다른 변화에서 무너진다. 값 대조 계약은 provider가 영수증에 필드를 하나 덧붙이는 것만으로 "
-            f"오탐이 {num(d_ann['extended_intent'], '이가', 2)} 된다. 메타데이터 채널을 잡아 준 미지 필드 거부 규칙이 그 "
+            f"오탐이 {num(d_ann['extended_intent'], '이/가', 2)} 된다. 메타데이터 채널을 잡아 준 미지 필드 거부 규칙이 그 "
             f"원인이어서, 탐지력과 drift 취약성이 같은 곳에서 나온다. 정규화가 한 단계 강해지면 v4 "
-            f"{pct(d_norm['extended_intent'], 3)}, v3 {num(d_norm['frozen_intent'], '으로로')} 둘 다 오른다. 반대로 승인 "
-            f"결합은 이 둘 모두에 {num(d_ann['approval_bound'], '으로로')} 반응하지 않는다. 해시가 provider 내부 표현이 "
+            f"{pct(d_norm['extended_intent'], 3)}, v3 {num(d_norm['frozen_intent'], '으로/로')} 둘 다 오른다. 반대로 승인 "
+            f"결합은 이 둘 모두에 {num(d_ann['approval_bound'], '으로/로')} 반응하지 않는다. 해시가 provider 내부 표현이 "
             f"아니라 요청 바이트에 걸려 있기 때문이다. 대신 provider가 해시 기준을 바꾸면 승인 결합만 "
-            f"{num(d_hash['approval_bound'], '으로로')} 오른다. Unicode NFC에서 셋 다 0인 것은 강건성이 아니라 본 정상 "
+            f"{num(d_hash['approval_bound'], '으로/로')} 오른다. Unicode NFC에서 셋 다 0인 것은 강건성이 아니라 본 정상 "
             f"코퍼스가 ASCII뿐이라 그 변화가 값을 바꾸지 못한 결과다.", st["body"]))
 
     if hold:
@@ -557,11 +559,11 @@ def build_story(a: dict, st: dict, figures: dict, width: float) -> list:
             f"값 대조가 {pct(hg['neither']['recall']['extended_intent'], 3)}인데 승인 결합은 "
             f"{pct(hg['neither']['recall']['approval_bound'], 2)}, provider 해석을 건드리는 B에서는 반대로 값 대조 "
             f"{pct(hg['v4_only']['recall']['extended_intent'], 3)}에 승인 결합 "
-            f"{num(hg['v4_only']['recall']['approval_bound'], '이며며')}, D는 "
-            f"{num(hg['unseen']['recall']['extended_intent'], '과와')} "
-            f"{num(hg['unseen']['recall']['approval_bound'], '으로로')} 여전히 공통 사각지대다. 달라진 것은 오탐 쪽이다. "
+            f"{num(hg['v4_only']['recall']['approval_bound'], '이며/며')}, D는 "
+            f"{num(hg['unseen']['recall']['extended_intent'], '과/와')} "
+            f"{num(hg['unseen']['recall']['approval_bound'], '으로/로')} 여전히 공통 사각지대다. 달라진 것은 오탐 쪽이다. "
             f"원문 비교 계약 v3의 FPR이 본 행렬 {pct(clean_fpr['frozen_intent'], 3)}에서 "
-            f"{num(hold['fpr_excl_resubmit']['frozen_intent'], '으로로')} 오르는데, 남의 스키마에는 검증자가 모르는 "
+            f"{num(hold['fpr_excl_resubmit']['frozen_intent'], '으로/로')} 오르는데, 남의 스키마에는 검증자가 모르는 "
             f"정규화 대상 필드가 더 많기 때문이다. 사각지대의 구조는 도구 표를 바꿔도 남고, 오탐의 크기는 도구 표를 "
             f"따라 움직인다.", st["body"]))
         fid = hold.get("family_fidelity")
@@ -633,8 +635,8 @@ def build_story(a: dict, st: dict, figures: dict, width: float) -> list:
         f"유병률을 운영 기저율로 재가중하면 v4의 F1은 하나로 정해지지 않는다. 오탐이 0으로 측정됐기 때문이며, 이는 "
         f"위험이 0이라는 뜻이 아니라 표본이 그 위 어디까지인지를 말해 주지 않는다는 뜻이다. 1:999에서 점추정은 "
         f"{pct(b999['extended_intent']['point'], 3)}, rule of three 상한을 조건 클러스터 단위 "
-        f"3/{zero['n_clusters']}={num(zero['fpr_upper_95'], '으로로', 4)} 잡으면 {pct(b999['extended_intent']['worst'], 3)}, 행 "
-        f"단위 3/{zero['n_benign']:,}={num(zero['fpr_upper_95_row'], '으로로', 5)} 잡으면 "
+        f"3/{zero['n_clusters']}={num(zero['fpr_upper_95'], '으로/로', 4)} 잡으면 {pct(b999['extended_intent']['worst'], 3)}, 행 "
+        f"단위 3/{zero['n_benign']:,}={num(zero['fpr_upper_95_row'], '으로/로', 5)} 잡으면 "
         f"{pct(b999['extended_intent']['worst_row'], 3)}이고, 측정 부트스트랩 95% FPR 구간은 "
         f"[{pct(a['ci95_fpr_excl_resubmit']['extended_intent'][0], 3)}, "
         f"{pct(a['ci95_fpr_excl_resubmit']['extended_intent'][1], 3)}]다. 조건 안의 반복은 같은 코드 경로를 다시 밟는 "
@@ -664,7 +666,7 @@ def build_story(a: dict, st: dict, figures: dict, width: float) -> list:
             f"때만 유효로 셌다. 모델별 표본은 각 {llm['rows'] // max(1, len(llm['models']))}회다. "
             + (f"{len(llm['availability']) - len(live)}종은 이 경로에서 도구 호출을 한 번도 만들지 못했고, 호출을 만든 "
                f"{len(live)}종 사이에서도 " if len(live) < len(llm['availability']) else "모델 사이에서 ")
-            + f"생성률이 {pct(min(live.values()), 3)}–{num(max(live.values()), '으로로')} 갈렸다. "
+            + f"생성률이 {pct(min(live.values()), 3)}–{num(max(live.values()), '으로/로')} 갈렸다. "
             f"방어가 적용될 수 있는 범위 자체가 모델 능력에 달려 있다. 확실한 관찰은 하나 더 있다. 서버가 정상인데 "
             f"모델만 이탈한 {dev['rows']}건 가운데 승인 의도 앵커가 잡은 것은 {dev['intent_flags']}건뿐이고, 나머지는 "
             f"두 계약이 모두 열거하지 않은 필드에서 일어났다. 앵커는 무엇과 비교할지를 정하지만, 무엇을 볼 수 "
