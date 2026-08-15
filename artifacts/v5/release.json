@@ -1,7 +1,7 @@
 {
   "repository": "https://github.com/leeminsuk/mcp-toolproof",
-  "commit": "7fc7a96c3b8eb1e5de88198af65739f2c1c14dd0",
-  "commit_short": "7fc7a96",
+  "commit": "4e35e3663a46ec26a963f058a8462d3129409dff",
+  "commit_short": "4e35e36",
   "dirty": false,
   "python": "Python 3.10.11",
   "commands": [
@@ -166,7 +166,7 @@
     },
     {
       "file": "v5/make_report.py",
-      "sha256": "76af4eb252326275b70fac599474a9b1a0a2c38d0c317fc2dac784ad58405b9b"
+      "sha256": "5146d3481d3f802db190dd2bc8c74a86351736c7cdc00161b50762c97b370f69"
     },
     {
       "file": "v5/make_release.py",
