@@ -32,20 +32,23 @@ from make_paper import (DETECTOR_LABEL, DRIFT_LABEL, FAMILY_LABEL, GROUP_LABEL, 
 
 ROOT = Path(__file__).resolve().parent.parent
 ART = ROOT / "artifacts" / "v5"
-OUT = Path("/Users/chchou/Downloads/MCP_ToolProof_v5_부록_결과보고서.pdf")
+OUT = Path.home() / "Downloads" / "MCP_ToolProof_v5_부록_결과보고서.pdf"
 BLUE, LIGHT, GRAY = "#173A63", "#EAF0F7", "#5B6B7C"
-pdfmetrics.registerFont(TTFont("K", "/System/Library/Fonts/Supplemental/AppleGothic.ttf"))
+# make_paper registers the Hangul face "K" (platform-searched) on import.
+from make_paper import _korean_font_path  # noqa: E402
+if "K" not in pdfmetrics.getRegisteredFontNames():
+    pdfmetrics.registerFont(TTFont("K", _korean_font_path()))
 
 BENIGN_ORDER = ["clean", "normalisation", "migration", "resubmit"]
 BENIGN_LABEL = {"clean": "clean", "normalisation": "비정규화 입력",
                 "migration": "schema migration", "resubmit": "승인된 재제출"}
 ALL_DETECTORS = ["manifest_pin", "signed_manifest", "response_detector", "trajectory_lite",
                  "learned_relation", "frozen_intent", "extended_intent", "extended_naive",
-                 "approval_bound", "approval_naive"]
+                 "approval_bound", "approval_naive", "union_v4_approval"]
 SHORT = {"manifest_pin": "pin", "signed_manifest": "서명", "response_detector": "응답",
          "trajectory_lite": "궤적", "learned_relation": "학습", "frozen_intent": "v3",
          "extended_intent": "v4", "extended_naive": "v4+", "approval_bound": "승인",
-         "approval_naive": "승인+"}
+         "approval_naive": "승인+", "union_v4_approval": "합성"}
 
 
 def styles() -> dict:
@@ -120,8 +123,9 @@ def build(a: dict, st: dict, width: float, heatmap: Path) -> list:
 
     add(Paragraph("1. 표본 구성과 분해", st["h"]))
     add(Paragraph(
-        "논문이 보고하는 그룹별 값은 전체 실행의 절반인 독립 관측면에서 계산된다. 그 절반이 어디서 오는지를 "
-        "빠짐없이 적으면 다음과 같다.", st["body"]))
+        "논문이 보고하는 그룹별 값은 전체 실행의 절반인 독립 관측면에서 계산된다. 관측면 2종은 같은 호출을 두 번 "
+        "읽는 것이 아니라 검증기가 읽는 영수증 출처(provider / 도구 서버 자기보고)만 다른 별도 실행 부문이다. "
+        "그 절반이 어디서 오는지를 빠짐없이 적으면 다음과 같다.", st["body"]))
     add(table([["층", "산식", "실행 수"],
                ["도구", "—", f"{dec['tools']}"],
                ["도구당 조건", f"공격 계열 {dec['attack_families']} + 트리거 {dec['trigger_conditions']}"
@@ -231,7 +235,8 @@ def build(a: dict, st: dict, width: float, heatmap: Path) -> list:
 
     add(Paragraph("4. 계열별 전량 결과", st["h"]))
     add(Paragraph(
-        "열 이름은 논문 표 4의 방어와 같고, v4+와 승인+는 각각 정규화 미상 v4와 직렬화 미상 승인 결합 절제판이다.",
+        "열 약칭 가운데 v4+와 승인+는 각각 정규화 미상 v4와 직렬화 미상 승인 결합 절제판이고, 합성은 v4와 승인 "
+        "결합 판정의 행 단위 OR(논문 표 2 마지막 행)이다.",
         st["body"]))
     rows = [["#", "공격 계열", "그룹", "공격"] + [SHORT[d] for d in ALL_DETECTORS]]
     for index, family in enumerate(ORDER, start=1):
@@ -243,12 +248,13 @@ def build(a: dict, st: dict, width: float, heatmap: Path) -> list:
                       "unseen": ORDER[13:16], "fuzz": ORDER[16:]}.items() if family in members)
         rows.append([str(index), FAMILY_LABEL[family], GROUP_LETTER[group], f"{entry['attacks']:,}"]
                     + [fmt(entry["recall"][d], 2) for d in ALL_DETECTORS])
-    widths = [width * 0.045, width * 0.145, width * 0.045, width * 0.065] + [width * 0.0705] * 10
-    add(table(rows, widths, st, align_right=tuple(range(3, 14))))
+    widths = [width * 0.042, width * 0.125, width * 0.04, width * 0.058] + [width * 0.0668] * 11
+    add(table(rows, widths, st, align_right=tuple(range(3, 15))))
     add(Paragraph(
-        "표 A3. 공격 계열별 Recall 전량. 분모는 계열마다 오라클이 공격으로 판정한 실행 수이고, 조건부 트리거 "
-        "계열은 발동하지 않은 호출이 빠져 있어 배정 수보다 작다. 논문의 그룹별 값은 이 표를 그룹 안에서 가중 "
-        "평균한 것이므로, 그룹 값은 그룹 내부 계열 구성비에 의존한다.", st["cap"]))
+        "표 A3. 공격 계열별 Recall 전량. 합성은 v4와 승인 결합 판정의 행 단위 OR다. 분모는 계열마다 오라클이 "
+        "공격으로 판정한 실행 수다. 대상 치환은 조건부 트리거가 발동하지 않은 호출이 빠져서, 순서 교환은 효과가 둘 "
+        "이상인 도구에서만 성립해서 배정 수보다 작다. 논문의 그룹별 값은 이 표를 그룹 안에서 가중 평균한 것이므로, "
+        "그룹 값은 그룹 내부 계열 구성비에 의존한다.", st["cap"]))
 
     rows = [["정상 계열", "정상 실행"] + [SHORT[d] for d in ALL_DETECTORS]]
     for family in BENIGN_ORDER:
@@ -257,15 +263,16 @@ def build(a: dict, st: dict, width: float, heatmap: Path) -> list:
             continue
         rows.append([BENIGN_LABEL[family], f"{entry['benign']:,}"]
                     + [fmt(entry["fpr"][d], 2) for d in ALL_DETECTORS])
-    add(table(rows, [width * 0.16, width * 0.08] + [width * 0.076] * 10, st,
-              align_right=tuple(range(1, 12))))
+    add(table(rows, [width * 0.14, width * 0.07] + [width * 0.0718] * 11, st,
+              align_right=tuple(range(1, 13))))
     add(Paragraph(
         "표 A4. 정상 계열별 FPR 전량. v3의 오탐은 원문 비교가 provider 정규화를 모르기 때문에, manifest pin의 "
         "오탐은 의미가 같은 schema 변경 때문에 생긴다. 승인된 재제출은 네 방어가 모두 1.00으로 울리는데, 숨은 "
         "복제와 관측이 같기 때문이고 idempotency 키 정책 없이는 나눌 수 없다.", st["cap"]))
 
     add(Paragraph("5. 그룹별 결과와 신뢰구간 전량", st["h"]))
-    rows = [["그룹", "공격", "v3", "v3 95% CI", "v4", "v4 95% CI", "승인 결합", "승인 95% CI", "클러스터"]]
+    rows = [["그룹", "공격", "v3", "v3 95% CI", "v4", "v4 95% CI", "승인 결합", "승인 95% CI",
+             "합성", "합성 95% CI", "클러스터"]]
     for group in GROUP_ORDER:
         recall = grp[group]["recall"]
         rows.append([
@@ -276,16 +283,23 @@ def build(a: dict, st: dict, width: float, heatmap: Path) -> list:
             f"[{fmt(cig[group]['extended_intent'][0])}, {fmt(cig[group]['extended_intent'][1])}]",
             fmt(recall["approval_bound"]),
             f"[{fmt(cig[group]['approval_bound'][0])}, {fmt(cig[group]['approval_bound'][1])}]",
+            fmt(recall["union_v4_approval"]),
+            f"[{fmt(cig[group]['union_v4_approval'][0])}, {fmt(cig[group]['union_v4_approval'][1])}]",
             f"{a['ci95_by_group_clusters'][group]}"])
-    add(table(rows, [width * 0.15, width * 0.06, width * 0.06, width * 0.145, width * 0.06,
-                     width * 0.145, width * 0.07, width * 0.145, width * 0.065], st,
-              align_right=(1, 2, 4, 6, 8)))
+    add(table(rows, [width * 0.115, width * 0.05, width * 0.048, width * 0.118, width * 0.048,
+                     width * 0.118, width * 0.055, width * 0.118, width * 0.048, width * 0.118,
+                     width * 0.06], st,
+              align_right=(1, 2, 4, 6, 8, 10)))
+    diff = a.get("b_paired_diff")
     add(Paragraph(
         "표 A5. 그룹별 Recall과 조건 클러스터 부트스트랩 95% 구간. 재표집 단위는 행이 아니라 (도구, 계열, 트리거) "
         "조건 클러스터이며, 한 조건 안의 반복은 같은 코드 경로를 다시 밟는 것이라 독립 증거가 아니기 때문이다. "
-        "마지막 열이 각 그룹의 클러스터 수다. 분석 스크립트는 모든 점추정이 자기 구간 안에 드는지 매번 검사하고, "
-        "어긋나면 PDF 생성을 중단한다. 이전 revision의 논문 본문은 E 그룹의 구간을 D 그룹 이름으로 인쇄했고, "
-        "이 검사는 그 오류를 막기 위해 추가했다.", st["cap"]))
+        "합성은 v4와 승인 결합 판정의 행 단위 OR다. 마지막 열이 각 그룹의 클러스터 수다. 분석 스크립트는 모든 "
+        "점추정이 자기 구간 안에 드는지 매번 검사하고, 어긋나면 PDF 생성을 중단한다. 이전 revision의 논문 본문은 "
+        "E 그룹의 구간을 D 그룹 이름으로 인쇄했고, 이 검사는 그 오류를 막기 위해 추가했다."
+        + (f" 논문 5.3의 B 그룹 비교는 같은 클러스터로 짝지은 차이(v4에서 승인 결합을 뺀 값)로도 보고한다. "
+           f"점추정 {fmt(diff['point'])}, 95% 구간 [{fmt(diff['ci95'][0])}, {fmt(diff['ci95'][1])}]." if diff else ""),
+        st["cap"]))
 
     fpr_ci = a.get("ci95_fpr_excl_resubmit", {})
     if fpr_ci:
@@ -341,8 +355,8 @@ def build(a: dict, st: dict, width: float, heatmap: Path) -> list:
             entry = drift[kind]
             rows.append([DRIFT_LABEL[kind], f"{entry['benign_excl_resubmit']:,}"]
                         + [fmt(entry["fpr"][d], 2) for d in ALL_DETECTORS])
-        add(table(rows, [width * 0.17, width * 0.08] + [width * 0.075] * 10, st,
-                  align_right=tuple(range(1, 12))))
+        add(table(rows, [width * 0.15, width * 0.068] + [width * 0.0711] * 11, st,
+                  align_right=tuple(range(1, 13))))
         add(Paragraph(
             "표 A8. provider 변화별 오탐. 네 변화의 의미는 다음과 같다. <b>영수증 주석 추가</b>는 provider가 "
             "관측성을 위해 자기 릴리스 태그를 모든 영수증에 덧붙이는 변화, <b>정규화 강화</b>는 principal 필드까지 "
@@ -355,7 +369,8 @@ def build(a: dict, st: dict, width: float, heatmap: Path) -> list:
             "바꾸면 혼자 무너진다. 해시가 provider 내부 표현이 아니라 요청 바이트에 걸려 있기 때문이다. 셋째, "
             "Unicode NFC에서 세 방식이 모두 0인 것은 강건성의 증거가 아니다. 본 정상 코퍼스가 ASCII만 담고 있어 "
             "NFC 정규화가 어떤 값도 바꾸지 못했기 때문이며, 비ASCII 텍스트를 포함한 코퍼스에서는 다시 측정해야 "
-            "한다. 이 네 가지가 운영 drift 전체를 대표하지는 않는다. 재시도와 부분 재시도, locale과 시간대, "
+            "한다. 합성(v4 ∨ 승인)은 탐지 범위와 함께 무너지는 지점도 합쳐, 주석 추가와 해시 기준 변경 양쪽에서 "
+            "오른다. 이 네 가지가 운영 drift 전체를 대표하지는 않는다. 재시도와 부분 재시도, locale과 시간대, "
             "API 버전 폐기는 다루지 않았다.", st["body"]))
 
 
@@ -446,7 +461,8 @@ def build(a: dict, st: dict, width: float, heatmap: Path) -> list:
             "계약을 <b>공식 MCP Python SDK의 stdio 전송</b> 위로 옮겨 다시 측정한 것이다. 서버는 별도 OS "
             "프로세스이고, 관측면은 v5 provider의 Ed25519 서명 영수증 로그다. 이 스위트의 이전 판은 공격 서버가 "
             "직접 쓰는 SQLite를 관측면으로 삼았는데, 그러면 공격자가 증거를 통제한다. 심사가 지적한 그 결함을 "
-            "여기서 고쳤다. 지금은 공격자가 영수증을 만들 수도 지울 수도 없다.", st["body"]))
+            "여기서 고쳤다. 지금은 공격자가 영수증을 만들 수도 지울 수도 없다. 이 전송의 라벨은 상태 검사기 "
+            "단독이며, 두 오라클 구현의 교차검사는 본 행렬과 hold-out에서 수행했다(3.1절).", st["body"]))
         rg = real["by_group"]
         rows = [["그룹", "공격", "v4", "승인 결합"]]
         for group in GROUP_ORDER:
@@ -609,14 +625,22 @@ def build(a: dict, st: dict, width: float, heatmap: Path) -> list:
     for key in ("contract_sha256", "manifest_sha256", "learned_profile_sha256",
                 "provider_pubkey_ed25519", "publisher_pubkey_ed25519"):
         if key in freeze:
-            rows.append([key, f"<font face='Courier'>{freeze[key][:48]}</font>"])
+            # The ellipsis is not decoration: without it a 24-byte prefix reads
+            # as a complete value, and SHA-256 and an Ed25519 key are 32 bytes.
+            rows.append([key, f"<font face='Courier'>{freeze[key][:48]}…</font>"])
+    used = {Path(e["file"]).name for e in a.get("release", {}).get("artifacts", [])}
     for path in sorted(ART.glob("*.jsonl")):
         digest = hashlib.sha256(path.read_bytes()).hexdigest()[:16]
         lines = sum(1 for _ in path.open(encoding="utf-8"))
-        rows.append([f"{path.name} ({lines:,}행)", f"<font face='Courier'>sha256:{digest}…</font>"])
+        name = f"{path.name} ({lines:,}행)"
+        if used and path.name not in used:
+            name += " — 본 문서·논문 미사용(이전 스윕)"
+        rows.append([name, f"<font face='Courier'>sha256:{digest}…</font>"])
     add(table(rows, [width * 0.42, width * 0.58], st))
     add(Paragraph("표 A15. 동결 해시와 원시 로그. 계약·manifest·학습 프로파일 해시와 두 공개키는 평가 행렬이 "
-                  "돌기 전에 freeze.json에 기록된다.", st["cap"]))
+                  "돌기 전에 freeze.json에 기록된다. 해시·키 값은 지면상 앞 48hex(24바이트)에서 절단해 표시했고, "
+                  "전체 값은 freeze.json과 SHA256SUMS에 있다. ‘미사용’ 표시가 붙은 로그는 저장소에는 있으나 본 "
+                  "문서와 논문의 어떤 수치에도 들어가지 않는다.", st["cap"]))
     rel = a.get("release", {})
     if rel:
         add(Paragraph("14.1 공개 위치와 실행 명령", st["h2"]))
@@ -655,7 +679,7 @@ def build(a: dict, st: dict, width: float, heatmap: Path) -> list:
         "심사가 지적한 공동설계 편향 가운데 <b>공격 작성</b>은 아직 해소하지 못했다. 계열을 공개 분류체계에서 그대로 "
         "가져오면 될 것 같지만, 확인해 보면 그런 분류가 없다. 공식 MCP 보안 문서"
         "(<font face='Courier'>modelcontextprotocol.io/specification/draft/basic/security_best_practices</font>, "
-        "2026-08-14 접속)의 ‘Attacks and Mitigations’ 절은 아래 11개 항목을 열거하는데, <b>전부 인가·전송·프록시 "
+        "2026-08-15 접속)의 ‘Attacks and Mitigations’ 절은 아래 11개 항목을 열거하는데, <b>전부 인가·전송·프록시 "
         "계층</b>이다.", st["body"]))
     add(table([["공식 문서 항목", "다루는 계층"],
                ["Confused Deputy Problem", "OAuth 위임·동의"],

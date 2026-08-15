@@ -1,20 +1,21 @@
 {
   "repository": "https://github.com/leeminsuk/mcp-toolproof",
-  "commit": "dcdb18ea5468d672f4a536e2f78cc9916f00104f",
-  "commit_short": "dcdb18e",
+  "commit": "7fc7a96c3b8eb1e5de88198af65739f2c1c14dd0",
+  "commit_short": "7fc7a96",
   "dirty": false,
-  "python": "Python 3.14.6",
+  "python": "Python 3.10.11",
   "commands": [
-    "v5/run_suites.sh                                    # 13,824행 본 행렬 + drift 5종",
-    "python3 v5/holdout.py --seeds 3 --calls 12          # 공개 스키마 hold-out",
-    "runtime/mcp-sdk-venv/bin/python v5/real_mcp.py --repeats 12   # 공식 MCP SDK",
-    "python3 v5/llm_layer.py --models qwen3:4b qwen2.5:7b gemma3:4b gemma4:12b --calls 3",
+    "v5/run_suites.sh                                    # main matrix 13,824 rows + 5 drift kinds",
+    "python3 v5/holdout.py --seeds 3 --calls 12          # published-schema hold-out",
+    "runtime/mcp-sdk-venv/bin/python v5/real_mcp.py --repeats 12   # official MCP SDK",
+    "python3 v5/llm_layer.py --models qwen3:4b qwen2.5:7b gemma3:4b gemma4:12b \\",
+    "    llama3.1:8b llama3.2:3b mistral:7b --calls 3 --out artifacts/v5/llm-local-suite.jsonl",
     "python3 v5/analyze.py --main artifacts/v5/main-suite.jsonl \\",
     "    --llm-local artifacts/v5/llm-local-suite.jsonl --drift artifacts/v5/drift-*.jsonl \\",
     "    --real-mcp artifacts/v5/real-mcp-sdk-suite.jsonl \\",
     "    --holdout artifacts/v5/holdout-suite.jsonl --out artifacts/v5/analysis.json",
-    "python3 -m pytest tests/test_v5.py                  # 회귀 테스트",
-    "python3 v5/make_paper.py && python3 v5/make_report.py"
+    "python3 -m pytest tests/test_v5.py                  # regression tests",
+    "python3 v5/make_release.py && python3 v5/make_paper.py && python3 v5/make_report.py"
   ],
   "artifacts": [
     {
@@ -73,9 +74,9 @@
     },
     {
       "file": "artifacts/v5/analysis.json",
-      "bytes": 67215,
+      "bytes": 70763,
       "rows": null,
-      "sha256": "789c726b6cca5d1c11da30c16b5dfae5953d15844833d963f4b60660bda89387"
+      "sha256": "bc554eab1e421ec39625cc0eddbbeb2d250948f0f078caf56a947f0d3763ff18"
     },
     {
       "file": "artifacts/v5/freeze.json",
@@ -117,71 +118,71 @@
   "code": [
     {
       "file": "v5/toolspec.py",
-      "sha256": "59739472b08f52437bc324ddf9dc9d6d3709dd1cec112362f065142118900f35"
+      "sha256": "809752f7ebb3c438dc81fae61e3c27f0837fab6d96061166edcb364a6d171e3b"
     },
     {
       "file": "v5/provider.py",
-      "sha256": "7e42e333226698fceb28a93486a9f110081dd4175090cc3509735100345bea78"
+      "sha256": "2ce4b0e7397a62c90c83e1159ecdb3297ab1272a7fa0521e0b7aa53ee4a9334b"
     },
     {
       "file": "v5/toolsrv.py",
-      "sha256": "6baed319a1edf0bea46bc59eabd6ed4964ae5fac566eaa76c8af8cf0b7b646a5"
+      "sha256": "1536bdeb51e0b74378cb6714a4bcaa44d0a22aa93d86711920e5b77c307197bc"
     },
     {
       "file": "v5/oracle.py",
-      "sha256": "7e7749c8e076909920a52315765d72af7c2ad5f69b3a6cad22a4af72b90ecf71"
+      "sha256": "c7ce3bd1fb7dbd89b90a2770ce3975620f493221bbaccc0b601b72acd2cb9ce4"
     },
     {
       "file": "v5/detectors.py",
-      "sha256": "155516725f07242dfb0d5e277d2b1105a8c06cb67c07fe0e774a68324391c6b2"
+      "sha256": "874d4d40c4a4e89fa365350895cc7c6de99f059ead9014d0f8a6e2ab37bbd10c"
     },
     {
       "file": "v5/harness.py",
-      "sha256": "15eafcfa7b91ffe5b19a6429fd8b7f4063769a696a2bba384377a157e326f4fe"
+      "sha256": "b75cb07a0d75519e1db8350ff72969f0b69ed15dae6af43db8a7c44aced397a5"
     },
     {
       "file": "v5/holdout.py",
-      "sha256": "829ff1622a0a39935660d12e1892bd50240c2def16fc266b40c31bf0bd0e753c"
+      "sha256": "e36a23565409ea9b31bbb656df83f448dc0ffb3b47a428e9e90a56cdfe787059"
     },
     {
       "file": "v5/mcp_server.py",
-      "sha256": "380fb35f0c37228b042ca5ca31e5308fcf44bd284b14bd78933296ada31520e2"
+      "sha256": "4c5fbc416b041a044b1d948bd0d7869e9698ef901bd4630276a168b1e20698e5"
     },
     {
       "file": "v5/real_mcp.py",
-      "sha256": "0c7e41082caf7f13f599c25ea9f3f6c3c23245765c93570619ab0d30fa09e50d"
+      "sha256": "90733fc1aabeaf28348a9f132cabb2ddaae3fbd4656b2e49efc2b0863753b052"
     },
     {
       "file": "v5/llm_layer.py",
-      "sha256": "8922a69e1f12dcdd67e2a80cc603d11adf2d10b9a1b4cdd2b65daf77dfc3bfce"
+      "sha256": "fbe606b6aa2a285084270e0b8495524de377e8bb29fd55a84f21a0c35cff9b42"
     },
     {
       "file": "v5/analyze.py",
-      "sha256": "a044d4e58bc56a15e55e648261243d8a21e72c33e1e3987679a70f91d925e619"
+      "sha256": "35f6f84815f94392985271c20c8ba10d107cc37e88c90f5df156627f8ae09332"
     },
     {
       "file": "v5/make_paper.py",
-      "sha256": "e5cb0864dd1772ea168e4d9a0b60bf3fa59f9cb7daefb093d3d228414be2f561"
+      "sha256": "62196a36d1493262dd7c386fcfd08e079373ca6064b132945abcaa4d294bbdb0"
     },
     {
       "file": "v5/make_report.py",
-      "sha256": "d2c25b7f830d72806b31152aa16e4edaafe25f5816eeb1c56448ac44dfd88fe9"
+      "sha256": "76af4eb252326275b70fac599474a9b1a0a2c38d0c317fc2dac784ad58405b9b"
     },
     {
       "file": "v5/make_release.py",
-      "sha256": "f8d750f89ef3212cadf491da81323e185bd2602fa9ef1665908cc0cc3bc9b8b5"
+      "sha256": "984b3d948cd48de1a35b552cb5c5d66917946a97114ee783faab6336c6883e3e"
     },
     {
       "file": "requirements.txt",
-      "sha256": "bda7ab533d2ee8baa8571be663f7b1f97b6a35e9c6836ea919797ba099fc1877"
+      "sha256": "8067f2278add94543d90227a499e899fe501e096430beeb0e369943b39f86d37"
     },
     {
       "file": "requirements-mcp.txt",
-      "sha256": "78c69b7c5a2b4f9ebde1890ed3bc4fb5c5bb04dcb3f2c5d2dae573c017eaf606"
+      "sha256": "c7350a0c07fcf17fe3eff0f4e61d21e123796e80d7cbff0032f6a58a0cc70ba7"
     },
     {
       "file": "tests/test_v5.py",
-      "sha256": "834142aecb2a8bf95aaecac1f68fadeebae1cca32b55f9aad0e27660a87b24da"
+      "sha256": "36d4100f4372c3ccaa1faa6c64ba10df739cb87ef86e07d22e500be5b34274db"
     }
   ]
 }

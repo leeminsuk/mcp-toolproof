@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import subprocess
 from pathlib import Path
 
@@ -30,10 +31,28 @@ from reportlab.platypus import (BaseDocTemplate, Frame, FrameBreak, Image,  # no
 ROOT = Path(__file__).resolve().parent.parent
 ART = ROOT / "artifacts" / "v5"
 FIG = ART / "figures"
-OUT = Path("/Users/chchou/Downloads/MCP_ToolProof_KIISC_3페이지_논문_v5.pdf")
+OUT = Path.home() / "Downloads" / "MCP_ToolProof_KIISC_3페이지_논문_v5.pdf"
 BLUE, LIGHT, GRAY = "#173A63", "#EAF0F7", "#5B6B7C"
-pdfmetrics.registerFont(TTFont("K", "/System/Library/Fonts/Supplemental/AppleGothic.ttf"))
-plt.rcParams["font.family"] = "Apple SD Gothic Neo"
+
+
+def _korean_font_path() -> str:
+    """First Hangul-capable TTF found, so the build runs on macOS and Windows
+    alike; TOOLPROOF_KR_FONT overrides the search."""
+    candidates = [
+        os.environ.get("TOOLPROOF_KR_FONT", ""),
+        "/System/Library/Fonts/Supplemental/AppleGothic.ttf",
+        "C:/Windows/Fonts/malgun.ttf",
+        "/usr/share/fonts/truetype/nanum/NanumGothic.ttf",
+    ]
+    for candidate in candidates:
+        if candidate and Path(candidate).exists():
+            return candidate
+    raise SystemExit("no Korean font found; set TOOLPROOF_KR_FONT to a TTF path")
+
+
+if "K" not in pdfmetrics.getRegisteredFontNames():
+    pdfmetrics.registerFont(TTFont("K", _korean_font_path()))
+plt.rcParams["font.family"] = ["Apple SD Gothic Neo", "Malgun Gothic", "NanumGothic"]
 plt.rcParams["axes.unicode_minus"] = False
 
 MARGIN = 11.5 * mm
@@ -44,6 +63,7 @@ DETECTOR_LABEL = {
     "learned_relation": "학습 관계", "frozen_intent": "계약 v3(동결)",
     "extended_intent": "계약 v4(확장)", "extended_naive": "v4(정규화 미상)",
     "approval_bound": "승인 결합", "approval_naive": "승인 결합(직렬화 미상)",
+    "union_v4_approval": "합성(v4 ∨ 승인)",
 }
 FAMILY_LABEL = {
     "tenant_crossing": "tenant 침범", "memo_exfiltration": "memo 유출",
@@ -191,6 +211,10 @@ def pct(value: float, digits: int = 3) -> str:
 # chosen from the value rather than typed.  A decimal is read digit by digit;
 # 0·1·3·6·7·8 end in a consonant (영·일·삼·육·칠·팔), 2·4·5·9 in a vowel.
 _CONSONANT_FINAL = set("013678")
+# 일·칠·팔 end in the consonant ㄹ, which takes 로 rather than 으로 — the one
+# exception to the consonant rule, and the source of "0.078으로" in an earlier
+# revision.
+_RIEUL_FINAL = set("178")
 
 
 def jo(text: str, pair: str) -> str:
@@ -200,8 +224,10 @@ def jo(text: str, pair: str) -> str:
     rather than split down the middle."""
     consonant_form, vowel_form = pair.split("/")
     digits = [c for c in text if c.isdigit()]
-    consonant = bool(digits) and digits[-1] in _CONSONANT_FINAL
-    return consonant_form if consonant else vowel_form
+    last = digits[-1] if digits else ""
+    if consonant_form.endswith("으로") and last in _RIEUL_FINAL:
+        return vowel_form
+    return consonant_form if last in _CONSONANT_FINAL else vowel_form
 
 
 def num(value: float, pair: str, digits: int = 3) -> str:
@@ -248,21 +274,24 @@ def build_story(a: dict, st: dict, figures: dict, width: float) -> list:
     add(Paragraph("요 약", st["h"]))
     add(Paragraph(
         f"AI 에이전트가 MCP 도구로 결제·메일·파일을 실행할 때, 승인된 서버는 manifest와 응답을 정상으로 유지한 채 "
-        f"실제 외부 효과만 바꿀 수 있다. 본 연구는 우월한 방어를 제안하지 않는다. 같은 workload에서 세 축(관측면 "
-        f"독립성, 승인 인자의 해시 결합, 계약이 열거한 영수증 의미 범위)이 만드는 사각지대가 서로를 보완한다는 것을 "
-        f"분해해 측정한다. 영수증은 provider가 Ed25519로 서명하고 검증기는 공개키만 가지므로 도구 서버도 검증기도 "
-        f"영수증을 만들어 낼 수 없다. 정답 라벨은 코드를 공유하지 않는 두 프로그램이 각각 계산했고 "
-        f"{orc['rows'] + hold['oracle']['rows']:,}행 전부에서 일치했다. 결정적 실행 {dec['rows']:,}회에서, 필드를 "
-        f"열거해 값을 대조하는 계약의 Recall은 계약이 검사하는 인자·효과에서 {pct(both['extended_intent'], 2)}, "
-        f"provider 해석·메타데이터에서 {pct(v4only['extended_intent'], 3)}, 계약이 검사하지 않는 인자에서 "
+        f"실제 외부 효과만 바꿀 수 있다. 본 연구는 같은 workload에서 세 축(관측면 독립성, 승인 인자의 해시 결합, "
+        f"계약이 열거한 영수증 의미 범위)이 만드는 사각지대가 서로를 보완한다는 것을 분해해 측정한다. 우월한 방어의 "
+        f"제안이 아니다. 영수증은 실제 효과를 집행하는 하위 실행계(이하 provider)가 Ed25519로 서명하고 검증기는 "
+        f"공개키만 가지므로 도구 서버도 검증기도 영수증을 위조할 수 없다. 정답 라벨은 코드를 공유하지 않는 두 "
+        f"프로그램이 각각 계산했고 {orc['rows'] + hold['oracle']['rows']:,}행 전부에서 일치했다. 결정적 실행 "
+        f"{dec['rows']:,}회(관측면당 {dec['per_observer']:,}회)에서, 필드를 열거해 값을 대조하는 계약의 Recall은 "
+        f"계약이 검사하는 인자·효과에서 {pct(both['extended_intent'], 2)}, provider 해석·메타데이터에서 "
+        f"{pct(v4only['extended_intent'], 3)}, 계약이 검사하지 않는 인자에서 "
         f"{num(neither['extended_intent'], '이고/고')}, 승인 요청 전체를 해시로 묶는 영수증은 같은 순서로 "
         f"{pct(both['approval_bound'], 2)}, {pct(v4only['approval_bound'], 3)}, "
         f"{num(neither['approval_bound'], '으로/로')} 정반대의 사각지대를 갖는다. 두 1.00은 성능이 아니라 각 방식이 그 "
         f"필드를 보기로 한 정의의 결과다. 영수증에 남지만 어느 계약도 열거하지 않는 처리 경로는 두 방식이 함께 놓쳐 "
-        f"각각 {pct(unseen['extended_intent'], 3)}, {pct(unseen['approval_bound'], 3)}에 그쳤다. 같은 구조가 본 "
-        f"연구와 무관하게 공개된 MCP 서버 {hold['tools']}개 도구 위에서 {hold['independent']:,}행으로 재현됐고"
-        f"(계약은 발행자가 쓴 required 목록), 공식 MCP SDK 전송 위에서도 재현됐다. 낮은 오탐도 무조건적이지 않다. "
-        f"provider가 영수증에 릴리스 태그를 덧붙이는 변화 하나만으로 값 대조 계약의 오탐이 "
+        f"각각 {pct(unseen['extended_intent'], 3)}, {pct(unseen['approval_bound'], 3)}에 그쳤고, 두 판정을 OR로 "
+        f"합성해도 이 그룹만 {num(unseen['union_v4_approval'], '으로/로')} 남는다. 같은 구조가 공개 MCP 서버 "
+        f"{len(hold['meta']['provenance'])}종의 발행 스키마에서 기계적으로 유도한 도구 {hold['tools']}개 표 위에서 "
+        f"{hold['independent']:,}행으로 재현됐고(계약은 발행자가 쓴 required 목록), 공식 MCP SDK 전송 위에서도 "
+        f"재현됐다. 낮은 오탐도 무조건적이지 않다. provider가 영수증에 릴리스 태그를 덧붙이는 변화 하나만으로 값 "
+        f"대조 계약의 오탐이 "
         f"{num(drift.get('receipt_annotation', {}).get('fpr', {}).get('extended_intent', 0), '으로/로', 2)} 뛴다. "
         f"경계는 없어지지 않고 자리를 옮긴다.", st["body"]))
 
@@ -271,8 +300,9 @@ def build_story(a: dict, st: dict, figures: dict, width: float) -> list:
         "MCP 보안 연구는 도구 설명 오염[3], 대리인 혼동[2], 설명과 구현의 불일치[7], 승인·실행 증명[6]으로 "
         "이어졌다. 그러나 승인된 서버가 인터페이스를 한 바이트도 바꾸지 않고 특정 조건에서 실제 효과만 바꾸면 "
         "control plane 무결성은 의미 무결성을 보장하지 않는다. CAVA[6]는 승인에 결합된 canonical action 영수증을 "
-        "제안하지만, 그 영수증이 실제로 독립일 때와 아닐 때 탐지가 얼마나 달라지는지는 수치로 보이지 않는다. "
-        "본 연구는 우월한 시스템을 주장하지 않는다. 측정하는 것은 방어의 순위가 아니라 사각지대의 분해다.", st["body"]))
+        "제안하고 자체 벤치마크로 결합·재현성을 평가하지만, 그 영수증이 공격자와 독립일 때와 아닐 때 탐지가 얼마나 "
+        "달라지는지는 수치로 보이지 않는다. 본 연구는 우월한 시스템을 주장하지 않는다. 측정하는 것은 방어의 순위가 "
+        "아니라 사각지대의 분해다.", st["body"]))
     add(Paragraph(
         f"기여는 세 가지다. 첫째, 세 축의 사각지대가 상호 보완적임을 같은 표본에서 분해했다. 관측면을 자기보고로 "
         f"바꾸면 값 비교가 전부 무너지고, 인자 해시 결합은 비열거 인자를 닫는 대신 provider 해석을 열며, 열거 확장은 "
@@ -288,9 +318,10 @@ def build_story(a: dict, st: dict, figures: dict, width: float) -> list:
         "있는 지점을 넓힌다. 사용자 의도, 모델이 만든 도구 호출, 서버가 provider에 보낸 요청, provider가 실제로 남긴 "
         "효과가 네 지점에서 갈릴 수 있고, 무엇을 승인의 기준으로 삼을지가 먼저 정해져야 한다. 공격자가 manifest를 한 "
         "바이트도 바꾸지 않는 동기도 여기서 나온다. 선행 연구는 대부분 실행 이전을 본다. MCPTox[3]는 도구 설명과 "
-        "schema 오염을, Confused Deputy[2]는 권한 위임과 도구 선택을, DCI[7]는 설명과 코드의 정적 불일치를 관측하고, "
-        "국내 연구[8-12]는 위협 분류·CVE·최소권한·SBOM으로 필요성을 뒷받침하되 실행 후 외부 효과를 정답으로 두지 "
-        "않는다. 규범 쪽도 같다. 공식 MCP 보안 문서[1]의 ‘공격과 완화’ 절은 항목 11개(혼동된 대리인, 토큰 "
+        "schema 오염을, Confused Deputy[2]는 권한 위임과 도구 선택을, DCI[7]는 설명과 코드의 정적 불일치를 "
+        "관측하며, 호출·응답을 가로채 검증하는 런타임 방어[4]와 악성 서버 탐지[5]도 도구 호출·응답과 실행 중 행위를 "
+        "보고, 국내 연구[8-12]는 위협 분류·CVE·최소권한·SBOM으로 필요성을 뒷받침하되 실행 후 외부 효과를 정답으로 "
+        "두지 않는다. 규범 쪽도 같다. 공식 MCP 보안 문서[1]의 ‘공격과 완화’ 절은 항목 11개(혼동된 대리인, 토큰 "
         "패스스루, SSRF, 상태 핸들 탈취, 로컬 서버 침해, OAuth URL 검증, stdio 프록시 권한상승, mix-up, localhost "
         "리다이렉트 사칭, CIMD 신뢰 정책, 스코프 최소화)를 열거하는데 <b>전부 인가·전송·프록시 계층이고, 인가된 "
         "서버가 승인된 것과 다른 효과를 실행하는 경우는 한 항목도 없다.</b> 본 연구가 다루는 것이 그 자리다.",
@@ -349,7 +380,9 @@ def build_story(a: dict, st: dict, figures: dict, width: float) -> list:
         f"자기보고 표본은 5.1에서만 쓴다. Recall의 분모는 오라클이 공격으로 판정한 실행 수이고, 신뢰구간의 재표집 "
         f"단위는 (도구, 계열, 트리거) 조건 클러스터다. 승인된 재제출 "
         f"{dec['benign'] - dec['benign_excl_resubmit']:,}행을 뺀 정상 {dec['benign_excl_resubmit']:,}행이 뒤에 "
-        f"나오는 FPR(재제출 제외)의 분모다.", st["body"]))
+        f"나오는 FPR(재제출 제외)의 분모다. 관측면 2종은 같은 호출을 두 번 읽는 것이 아니라 검증기가 읽는 영수증 "
+        f"출처(provider / 도구 서버 자기보고)만 다른 별도 실행 부문이다. seed는 승인 인자의 값을 바꾸고, 호출 "
+        f"index는 패딩·대소문자·경로 표기 같은 입력 변형과 지연 트리거의 발동 구간을 바꾼다.", st["body"]))
 
     add(Paragraph("3. 공격과 정상 트래픽", st["h"]))
     add(Paragraph(
@@ -390,13 +423,15 @@ def build_story(a: dict, st: dict, figures: dict, width: float) -> list:
         "drift 취약성을 함께 들여온다. 두 계약 모두 memo·tenant·callback_url은 열거하지 않는다. 비교를 위해 두 "
         "변형을 더 넣었다. 하나는 provider 정규화를 모르는 검증자가 쓸 법한 공백 제거만 하는 정규화로 v4를 다시 "
         "돌린 것이고, 다른 하나는 필드를 열거하는 대신 승인 인자 전체의 해시를 provider가 영수증에 담아 서명하는 "
-        "승인 결합 방식이다. provider는 정규화 전 원본 인자를 해시하므로 검증자가 provider 정규화를 알 필요가 없다.",
-        st["body"]))
+        "승인 결합 방식이다. provider는 정규화 전 원본 인자를 해시하므로 검증자가 provider 정규화를 알 필요가 없다. "
+        "전제는 대칭이 아니다. 값 대조 계약 둘은 영수증을 읽기만 하지만, 승인 결합은 provider가 수신 요청의 digest를 "
+        "영수증에 담아 서명해 주어야 성립하는 프로토콜 요구다. 아래 비교는 같은 관측면 위의 검증 규칙 비교이지 배치 "
+        "비용의 비교가 아니다.", st["body"]))
 
     add(Paragraph("5. 결과", st["h"]))
     rows = [["방어", "A", "B", "C", "D", "E", "FPR<br/>(재제출 제외)"]]
     for key in ["manifest_pin", "trajectory_lite", "learned_relation",
-                "frozen_intent", "extended_intent", "approval_bound"]:
+                "frozen_intent", "extended_intent", "approval_bound", "union_v4_approval"]:
         rows.append([DETECTOR_LABEL[key], pct(both[key], 3), pct(v4only[key], 3),
                      pct(neither[key], 3), pct(unseen[key], 3), pct(fuzz_rec[key], 3),
                      pct(clean_fpr[key], 3)])
@@ -413,13 +448,16 @@ def build_story(a: dict, st: dict, figures: dict, width: float) -> list:
         f"C {grp['neither']['attacks']:,}, D {grp['unseen']['attacks']:,}, E {grp['fuzz']['attacks']:,}회로 합계 "
         f"{a['attacks_independent']:,}회이고, 정상 {a['benign_independent']:,}회를 더하면 {dec['per_observer']:,}행이 "
         f"된다(2.2절). 마지막 열은 승인된 재제출을 뺀 정상 {dec['benign_excl_resubmit']:,}행 기준이다. 서명 "
-        f"manifest와 응답 검사는 A–E 전 그룹에서 0.000이므로 줄을 빼고 본문에서 이유를 적었다. v4 Recall의 조건 "
-        f"클러스터 부트스트랩 95% 구간은 {ci_text}, 재표집 단위인 조건 클러스터 수는 {cluster_text}개다.", st["cap"]))
+        f"manifest와 응답 검사는 A–E 전 그룹에서 0.000이므로 줄을 빼고 본문에서 이유를 적었다. 합성 행은 v4와 승인 "
+        f"결합의 판정을 행 단위 OR로 묶은 것으로, 새 탐지기가 아니라 같은 로그의 두 판정 열에서 계산했다(5.3). "
+        f"v4 Recall의 조건 클러스터 부트스트랩 95% 구간은 {ci_text}, 재표집 단위인 조건 클러스터 수는 "
+        f"{cluster_text}개다.", st["cap"]))
     add(fig_image(figures["heatmap"], width))
     add(Paragraph(
         "그림 1. 계열별 Recall. 가로줄은 표 1의 그룹 경계다. 그룹 값은 이 표를 그룹 안에서 가중 평균한 것이므로 "
-        "그룹 안에서도 계열마다 갈린다. 분모는 계열마다 오라클이 공격으로 판정한 실행 수이고, 조건부 트리거가 붙은 "
-        "대상 치환만 발동하지 않은 호출이 빠져 수가 다르다.", st["cap"]))
+        "그룹 안에서도 계열마다 갈린다. 분모는 계열마다 오라클이 공격으로 판정한 실행 수다. 대상 치환은 조건부 "
+        "트리거가 발동하지 않은 호출이 빠져서, 순서 교환은 효과가 둘 이상인 도구에서만 성립해서 수가 다르다.",
+        st["cap"]))
     add(Paragraph(
         f"공격 비율은 {100 * a['attacks_independent'] / dec['per_observer']:.1f}%이며 운영 기저율은 5.7에서 "
         f"재가중한다. 전 계열 집계는 계열 구성비의 함수이므로 싣지 않는다. v3가 B에서 보이는 "
@@ -461,29 +499,45 @@ def build_story(a: dict, st: dict, figures: dict, width: float) -> list:
     fz = a["fuzz_by_tool"]
     lo_tool = min(fz, key=lambda t: fz[t]["share"])
     hi_tool = max(fz, key=lambda t: fz[t]["share"])
+    fzd = a["fuzz_v3_v4_disagreement"]
     add(Paragraph(
         f"퍼징(E)도 같은 방향이다. 계약이 열거한 인자 비율이 가장 낮은 {lo_tool}"
         f"({fz[lo_tool]['enumerated']}/{fz[lo_tool]['declared']})에서 v4 Recall이 "
         f"{pct(fz[lo_tool]['recall_v4'], 3)}, 가장 높은 {hi_tool}({fz[hi_tool]['enumerated']}/"
-        f"{fz[hi_tool]['declared']})에서 {pct(fz[hi_tool]['recall_v4'], 3)}다. 도구 8종뿐이라 방향만 보고하고 "
-        f"인과로 단정하지 않는다.", st["body"]))
+        f"{fz[hi_tool]['declared']})에서 {num(fz[hi_tool]['recall_v4'], '이다/다')}. 도구 8종뿐이라 방향만 보고하고 "
+        f"인과로 단정하지 않는다. E에서 v3({pct(fam['fuzz_field']['recall']['frozen_intent'], 3)})가 "
+        f"v4({pct(fam['fuzz_field']['recall']['extended_intent'], 3)})를 근소하게 앞서는 것도 탐지력이 아니다. "
+        f"v3만 잡은 {fzd['v3_only']}행({fzd['v3_only_mutation_outside_enumeration']}행이 비열거 인자 변형, "
+        f"{fzd['v3_only_unnormalised_anchor']}행이 비정규 승인 입력)은 공격이 아니라 v3의 정규화 무지 오경보가 "
+        f"공격 행에 겹쳐 TP로 계산된 것이고, v4만 잡은 {fzd['v4_only']}행은 v4가 새로 열거한 unit의 "
+        f"변형({fzd['v4_only_unit_mutation']}행)이다.", st["body"]))
 
     add(Paragraph("5.3 두 접근의 사각지대는 정반대이고, 공통 사각지대가 남는다", st["h"]))
+    diff = a["b_paired_diff"]
     add(Paragraph(
         f"필드를 열거하는 대신 승인 인자 전체를 해시로 묶으면 인자 공간의 사각지대가 사라진다. 승인 결합은 계약이 "
         f"검사하지 않는 인자 그룹(C)에서 {pct(neither['approval_bound'], 2)}, 무작위 인자(E)에서 "
         f"{num(fuzz_rec['approval_bound'], '으로/로', 2)} 값 대조 계약의 {pct(neither['extended_intent'], 3)}·"
-        f"{pct(fuzz_rec['extended_intent'], 3)}를 크게 앞선다. 반대로 provider 해석·메타데이터(B)에서는 "
-        f"{num(v4only['approval_bound'], '으로/로')} 값 대조 계약의 {pct(v4only['extended_intent'], 3)}보다 낮다. 간접참조 "
+        f"{num(fuzz_rec['extended_intent'], '을/를')} 크게 앞선다. 반대로 provider 해석·메타데이터(B)에서는 "
+        f"{num(v4only['approval_bound'], '으로/로')} 값 대조 계약의 {pct(v4only['extended_intent'], 3)}보다 낮다"
+        f"(같은 클러스터로 짝지은 차이의 95% 구간 [{pct(diff['ci95'][0], 3)}, {pct(diff['ci95'][1], 3)}]). 간접참조 "
         f"해석과 메타데이터 채널은 인자를 하나도 바꾸지 않으므로 해시가 그대로다. 두 방식이 함께 놓치는 그룹이 D다. "
         f"별칭 체인, 정산 경로 우회, 정산 계정 교체 {grp['unseen']['attacks']:,}회에서 값 대조 계약은 "
         f"{pct(unseen['extended_intent'], 3)}, 승인 결합은 {num(unseen['approval_bound'], '이며/며')} 승인 결합의 "
         f"클러스터 95% 구간은 [{pct(cig['unseen']['approval_bound'][0], 3)}, "
-        f"{pct(cig['unseen']['approval_bound'][1], 3)}]다. provider가 영수증에 남기는 사실인데 어느 계약도 읽지 "
-        f"않기 때문이다. 인자 공간은 해시로 닫을 수 있고 provider 해석은 열거로 닫을 수 있지만, 열거를 한 단계 늘리면 "
-        f"경계는 그다음 단계로 물러난다. 두 1.00은 성능이 아니다. 값 대조 계약의 A는 그 필드를 검사하기로 한 결정의 "
-        f"결과이고, 승인 결합의 C·E는 인자를 하나라도 바꾸면 해시가 깨진다는 정의의 결과다. 측정된 것은 0에 가까운 "
-        f"세 칸(B의 승인 결합, C의 값 대조, D의 양쪽)이다.", st["body"]))
+        f"{pct(cig['unseen']['approval_bound'][1], 3)}]{jo(pct(cig['unseen']['approval_bound'][1], 3), '이다/다')}. "
+        f"provider가 영수증에 남기는 사실인데 어느 계약도 읽지 않기 때문이다. 그래서 두 판정을 행 단위 OR로 합성한 "
+        f"표 2의 마지막 행은 A·B·C·E를 {pct(grp['both']['recall']['union_v4_approval'], 2)}·"
+        f"{pct(grp['v4_only']['recall']['union_v4_approval'], 2)}·"
+        f"{pct(grp['neither']['recall']['union_v4_approval'], 2)}·"
+        f"{num(grp['fuzz']['recall']['union_v4_approval'], '으로/로', 2)} 닫고 오탐도 "
+        f"{pct(clean_fpr['union_v4_approval'], 3)}에 머물지만, D는 "
+        f"{num(unseen['union_v4_approval'], '으로/로')} 그대로 남는다. 상보성은 인자와 해석의 경계까지이고, 아무도 "
+        f"열거하지 않은 영수증 경로는 합성으로도 닫히지 않는다. 인자 공간은 해시로 닫을 수 있고 provider 해석은 "
+        f"열거로 닫을 수 있지만, 열거를 한 단계 늘리면 경계는 그다음 단계로 물러난다. 두 1.00은 성능이 아니다. 값 "
+        f"대조 계약의 A는 그 필드를 검사하기로 한 결정의 결과이고, 승인 결합의 C·E는 인자를 하나라도 바꾸면 해시가 "
+        f"깨진다는 정의의 결과다. 측정된 것은 0에 가까운 세 칸(B의 승인 결합, C의 값 대조, D의 양쪽)이다.",
+        st["body"]))
 
     add(Paragraph("5.4 낮은 오탐은 구현 합치와 provider 정지에 기댄다", st["h"]))
     add(Paragraph(
@@ -500,16 +554,17 @@ def build_story(a: dict, st: dict, figures: dict, width: float) -> list:
             "운영에서 더 흔한 쪽은 계약을 동결한 뒤 provider가 변하는 경우다. 정상 트래픽만으로 같은 행렬을 다시 "
             "돌리되 provider를 네 가지로 바꿨다. 공격이 없으므로 오라클은 모든 행을 정상으로 라벨하고, 여기서 나온 "
             "경보는 정의상 전부 오탐이다.", st["body"]))
-        drift_rows = [["provider 변화", "v3 FPR", "v4 FPR", "승인 결합 FPR"]]
+        drift_rows = [["provider 변화", "v3 FPR", "v4 FPR", "승인 결합 FPR", "합성 FPR"]]
         for kind in ("none", "receipt_annotation", "normalisation_upgrade", "unicode_nfc",
                      "hash_basis_change"):
             if kind not in drift:
                 continue
             f = drift[kind]["fpr"]
             drift_rows.append([DRIFT_LABEL[kind], pct(f["frozen_intent"], 3),
-                               pct(f["extended_intent"], 3), pct(f["approval_bound"], 3)])
-        add(table(drift_rows, [width * 0.34, width * 0.22, width * 0.22, width * 0.22],
-                  st, align_right=(1, 2, 3)))
+                               pct(f["extended_intent"], 3), pct(f["approval_bound"], 3),
+                               pct(f["union_v4_approval"], 3)])
+        add(table(drift_rows, [width * 0.28, width * 0.18, width * 0.18, width * 0.18,
+                               width * 0.18], st, align_right=(1, 2, 3, 4)))
         add(Paragraph(
             f"표 3. 계약 동결 이후 provider만 바뀐 정상 트래픽 {drift['none']['benign_excl_resubmit']:,}행(재제출 제외, "
             f"변화 종류마다 같은 크기)에서의 오탐. 정상 계열만 돌린 별도 스위트이므로 분모가 표 2의 "
@@ -528,7 +583,10 @@ def build_story(a: dict, st: dict, figures: dict, width: float) -> list:
             f"결합은 이 둘 모두에 {num(d_ann['approval_bound'], '으로/로')} 반응하지 않는다. 해시가 provider 내부 표현이 "
             f"아니라 요청 바이트에 걸려 있기 때문이다. 대신 provider가 해시 기준을 바꾸면 승인 결합만 "
             f"{num(d_hash['approval_bound'], '으로/로')} 오른다. Unicode NFC에서 셋 다 0인 것은 강건성이 아니라 본 정상 "
-            f"코퍼스가 ASCII뿐이라 그 변화가 값을 바꾸지 못한 결과다.", st["body"]))
+            f"코퍼스가 ASCII뿐이라 그 변화가 값을 바꾸지 못한 결과다. 합성은 탐지 범위와 함께 무너지는 지점도 "
+            f"합친다. 주석 추가에서 {pct(d_ann['union_v4_approval'], 2)}, 해시 기준 변경에서 "
+            f"{num(d_hash['union_v4_approval'], '으로/로')} 올라 두 방식의 drift 취약성을 그대로 물려받는다.",
+            st["body"]))
 
     if hold:
         add(Paragraph("5.5 남이 만든 도구 표에서 같은 분해가 나온다", st["h"]))
@@ -588,14 +646,16 @@ def build_story(a: dict, st: dict, figures: dict, width: float) -> list:
             f"두 번째 확인은 전송이다. 같은 공격기·같은 오라클·같은 계약을 공식 MCP Python SDK의 stdio 전송 위에 "
             f"올려 {real['rows']:,}회를 다시 돌렸다. 서버는 별도 OS 프로세스이고 관측면은 v5 provider의 서명 영수증 "
             f"로그다. 이전 판이 공격 서버가 직접 쓰는 SQLite를 관측면으로 삼았던 것과 달리, 여기서는 공격자가 증거를 "
-            f"만들 수도 지울 수도 없다. tools/list 해시는 정상·공격 {len(real['meta']['families'])}개 모드 전부에서 "
+            f"만들 수도 지울 수도 없다. 이 전송의 라벨은 상태 검사기 단독이며, 두 구현의 교차검사는 본 행렬과 "
+            f"hold-out에서 수행했다(2.1). tools/list 해시는 정상·공격 {len(real['meta']['families'])}개 모드 전부에서 "
             f"{len(real['manifest_hashes'])}종으로 같았고, 응답은 {pct(real['response_matches_approved'], 3)}의 비율로 "
             f"승인값을 그대로 돌려줬다. 그룹 구조도 재현된다. A {pct(rg['both']['recall']['extended_intent'], 2)}, "
             f"C 값 대조 {pct(rg['neither']['recall']['extended_intent'], 3)} 대 승인 결합 "
             f"{pct(rg['neither']['recall']['approval_bound'], 2)}, D "
-            f"{pct(rg['unseen']['recall']['extended_intent'], 3)}·{pct(rg['unseen']['recall']['approval_bound'], 3)}다. "
-            f"지연 발동 공격은 도구별 승인 probe {real['probe_calls']}회에서 {real['probe_fired']}회 켜졌고 배치 후 "
-            f"공격 {real['deployed_attacks']}건은 전부 탐지됐다.", st["body"]))
+            f"{pct(rg['unseen']['recall']['extended_intent'], 3)}·"
+            f"{num(rg['unseen']['recall']['approval_bound'], '이다/다')}. "
+            f"지연 발동 공격은 승인 probe {real['probe_calls']}회(도구별 첫 3회)에서 {real['probe_fired']}회 켜졌고 "
+            f"배치 후 공격 {real['deployed_attacks']}건 중 {real['deployed_detected']}건이 탐지됐다.", st["body"]))
         add(Paragraph(
             f"운영에서 더 중요한 것은 전송 장애와 의미 이탈을 가를 수 있느냐다. 도구 서버와 provider 사이에 세 가지 "
             f"장애를 정상 트래픽에 주입했다. 연결을 RST로 끊으면 효과가 아예 기록되지 않아 영수증 "
@@ -628,8 +688,8 @@ def build_story(a: dict, st: dict, figures: dict, width: float) -> list:
     passed = sum(1 for g in a["gates"] if g["verdict"] == "통과")
     add(Paragraph(
         f"표 5. 평가 전에 정한 기준과 실측. 판정 열은 관측값과 임계값을 비교해 스크립트가 계산하며 본문에 손으로 "
-        f"적지 않는다. {len(a['gates'])}개 중 {passed}개 통과. 실패한 네 건은 그대로 보고하며, 통과한 Recall 기준도 "
-        f"성능이 아니라 각 방식이 그 필드를 보기로 한 정의의 결과다(5.3).", st["cap"]))
+        f"적지 않는다. {len(a['gates'])}개 중 {passed}개 통과. 실패한 {len(a['gates']) - passed}건은 그대로 "
+        f"보고하며, 통과한 Recall 기준도 성능이 아니라 각 방식이 그 필드를 보기로 한 정의의 결과다(5.3).", st["cap"]))
     bounds, zero = a["prevalence_bounds"], a["zero_fp_upper_bound"]
     b999 = bounds.get("999") or bounds[999]
     add(Paragraph(
@@ -640,7 +700,10 @@ def build_story(a: dict, st: dict, figures: dict, width: float) -> list:
         f"단위 3/{zero['n_benign']:,}={num(zero['fpr_upper_95_row'], '으로/로', 5)} 잡으면 "
         f"{pct(b999['extended_intent']['worst_row'], 3)}이고, 측정 부트스트랩 95% FPR 구간은 "
         f"[{pct(a['ci95_fpr_excl_resubmit']['extended_intent'][0], 3)}, "
-        f"{pct(a['ci95_fpr_excl_resubmit']['extended_intent'][1], 3)}]다. 조건 안의 반복은 같은 코드 경로를 다시 밟는 "
+        f"{pct(a['ci95_fpr_excl_resubmit']['extended_intent'][1], 3)}]"
+        f"{jo(pct(a['ci95_fpr_excl_resubmit']['extended_intent'][1], 3), '이다/다')}. 이 F1은 본 행렬의 계열 "
+        f"구성비 위에서 전 계열 Recall을 재가중한 예시 값이라, 5절이 그룹별 보고를 택한 것과 같은 이유로 구성비가 "
+        f"다르면 함께 움직인다. 조건 안의 반복은 같은 코드 경로를 다시 밟는 "
         f"것이라 클러스터 단위가 보수적이지만, 조건은 전수 조합으로 만든 설계 격자이지 모집단 표본이 아니므로 이 "
         f"상한도 ‘본 격자에서 오탐이 관측되지 않았다’를 수치로 옮긴 것일 뿐 운영 분포의 보장이 아니다.", st["body"]))
     add(Paragraph(
@@ -709,13 +772,13 @@ def build_story(a: dict, st: dict, figures: dict, width: float) -> list:
         "방식이 함께 놓친다. 이 분해는 본 테스트베드의 성질이 아니다. 도구 표와 계약을 공개 MCP 서버에서 그대로 "
         "가져와도, 전송을 공식 SDK로 바꿔도 같은 모양이 나온다. 네 번째 축은 시간이다. 두 방식의 낮은 오탐은 "
         "검증자가 provider의 바이트 수준 관례를 재현하는 동안만 유지되고, 그 재현이 깨지는 지점은 방식마다 다르다. "
-        "경계는 없어지지 않고 자리를 옮긴다. 배치 판단은 provider 영수증의 독립성 확보, 열거 범위의 명시, 최종 "
-        "principal까지 영수증에 담게 하는 요구, 영수증 도착 대기 정책, 그리고 영수증 스키마의 버전 협상에서 "
-        "시작해야 한다.", st["body"]))
+        "두 방식을 합성해도 D와 이 시간 축은 남는다. 경계는 없어지지 않고 자리를 옮긴다. 배치 판단은 provider "
+        "영수증의 독립성 확보, 열거 범위의 명시, 최종 principal까지 영수증에 담게 하는 요구, 영수증 도착 대기 정책, "
+        "그리고 영수증 스키마의 버전 협상에서 시작해야 한다.", st["body"]))
 
     add(Paragraph("참고문헌", st["h"]))
     add(Paragraph(
-        "[1] Model Context Protocol, “Security Best Practices,” specification/draft/basic/security_best_practices, modelcontextprotocol.io, 2026 (accessed 2026-08-14).<br/>"
+        "[1] Model Context Protocol, “Security Best Practices,” specification/draft/basic/security_best_practices, modelcontextprotocol.io, 2026 (accessed 2026-08-15).<br/>"
         "[2] Z. Li et al., “Confused Deputy Attack Against Model Context Protocol,” ACM TOSEM, doi:10.1145/3830467, 2026.<br/>"
         "[3] Z. Wang et al., “MCPTox: A Benchmark for Tool Poisoning on Real-World MCP Servers,” AAAI 40(42), 35811–35819, 2026.<br/>"
         "[4] S. Yergattikar, “Securing the Tool Layer: A Threat Taxonomy and Runtime Defense Framework for MCP Deployments,” ACL Industry Track, 2026.<br/>"
@@ -733,6 +796,9 @@ def build_story(a: dict, st: dict, figures: dict, width: float) -> list:
     by_name = {Path(e["file"]).name: e for e in rel.get("artifacts", [])}
     main_sha = by_name.get("main-suite.jsonl", {}).get("sha256", "")
     hold_sha = by_name.get("holdout-suite.jsonl", {}).get("sha256", "")
+    # The count is read off the test file rather than typed, so adding a test
+    # cannot leave a stale number in print.
+    tests_total = (ROOT / "tests" / "test_v5.py").read_text(encoding="utf-8").count("def test_")
     add(Paragraph(
         f"코드·원시 JSONL 로그·분석 스크립트·실행 명령을 {rel.get('repository', '')} 에 공개한다. 본문 수치는 "
         f"커밋 {rel.get('commit_short', '')}에서 생성됐다. 원시 로그 SHA-256은 저장소의 "
@@ -742,9 +808,10 @@ def build_story(a: dict, st: dict, figures: dict, width: float) -> list:
         f"로그에서 분석 스크립트가 자동 집계했고 손으로 옮겨 적은 숫자는 없다. 스크립트는 두 오라클 구현의 라벨이 "
         f"전 행에서 일치하는지, 점추정이 자기 신뢰구간에 드는지, 그룹별 실행 수가 표본 합계를 재현하는지, 사전 기준 "
         f"판정이 임계값과 일치하는지를 매번 검사하고 하나라도 어긋나면 PDF 생성을 중단한다. 회귀 테스트 "
-        f"26종이 위 성질들을 고정한다. 전 과정은 GPU 없이 노트북 한 대에서 재현되며, 재현 명령은 "
+        f"{tests_total}종이 위 성질들을 고정한다. 전 과정은 GPU 없이 노트북 한 대에서 재현되며, 재현 명령은 "
         f"저장소 README와 artifacts/v5/release.json에 그대로 적혀 있다. 계약 해시·manifest 해시·학습 프로파일 "
-        f"해시와 두 공개키는 평가 전에 freeze.json에 기록했다.", st["tiny"]))
+        f"해시와 두 공개키는 평가 전에 freeze.json에 기록했다. 계열별·모델별 전량 표와 실패·제외 감사는 같은 "
+        f"analysis.json에서 생성한 부록 결과보고서에 있다.", st["tiny"]))
     return story
 
 
@@ -772,7 +839,8 @@ def render(analysis: dict, scale: float, figures: dict) -> int:
     top_margin, bottom_margin = MARGIN * 0.78, MARGIN * 0.62
     doc = BaseDocTemplate(str(OUT), pagesize=A4, leftMargin=MARGIN, rightMargin=MARGIN,
                           topMargin=top_margin, bottomMargin=bottom_margin,
-                          title="MCP 도구 외부효과 변조 탐지의 두 가지 경계")
+                          title="MCP 도구 외부효과 검증의 사각지대 분해: "
+                                "관측면 독립성 · 인자 결합 · 영수증 의미 범위")
     top = height - top_margin
     full_height = top - bottom_margin
     title_height = 21 * mm * scale
@@ -800,8 +868,30 @@ def render(analysis: dict, scale: float, figures: dict) -> int:
     story = build_story(analysis, st, figures, column)
     story.insert(0, NextPageTemplate("two"))
     doc.build(bind_captions(story))
-    return int(subprocess.run(["pdfinfo", str(OUT)], capture_output=True, text=True)
-               .stdout.split("Pages:")[1].split()[0])
+    return page_count(OUT)
+
+
+def page_count(path: Path) -> int:
+    """Page count via poppler when present, PyMuPDF otherwise, so the build
+    runs on machines without the poppler CLI tools."""
+    try:
+        return int(subprocess.run(["pdfinfo", str(path)], capture_output=True, text=True,
+                                  check=True).stdout.split("Pages:")[1].split()[0])
+    except (FileNotFoundError, subprocess.CalledProcessError, IndexError):
+        import fitz
+        with fitz.open(str(path)) as doc:
+            return doc.page_count
+
+
+def extract_text(path: Path) -> str:
+    """Text of the finished PDF via poppler when present, PyMuPDF otherwise."""
+    try:
+        return subprocess.run(["pdftotext", str(path), "-"],
+                              capture_output=True, text=True, check=True).stdout
+    except (FileNotFoundError, subprocess.CalledProcessError):
+        import fitz
+        with fitz.open(str(path)) as doc:
+            return "\n".join(page.get_text() for page in doc)
 
 
 def verify_render(path: Path, required: list[str]) -> None:
@@ -813,8 +903,7 @@ def verify_render(path: Path, required: list[str]) -> None:
     """
     # Raw mode, not -layout: -layout interleaves the two columns on a shared
     # visual line, which splices unrelated text into the middle of a phrase.
-    text = subprocess.run(["pdftotext", str(path), "-"],
-                          capture_output=True, text=True, check=True).stdout
+    text = extract_text(path)
     flat = " ".join(text.split())
     # A URL or a hash may be broken across a column line, so also match against
     # the text with all whitespace removed.

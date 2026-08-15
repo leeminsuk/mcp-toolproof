@@ -15,7 +15,27 @@ from pathlib import Path
 
 DETECTORS = ["manifest_pin", "signed_manifest", "response_detector", "trajectory_lite",
              "learned_relation", "frozen_intent", "extended_intent", "extended_naive",
-             "approval_bound", "approval_naive"]
+             "approval_bound", "approval_naive", "union_v4_approval"]
+
+# The composed defence: extended contract OR approval binding.  It is an OR
+# over two verdicts already frozen in the raw logs, not a new detector run, so
+# it can be recomputed from any suite file without re-running the matrix.
+UNION_DETECTOR = "union_v4_approval"
+
+
+def augment_union(rows: list[dict]) -> list[dict]:
+    for row in rows:
+        verdicts = row["detectors"]
+        verdicts[UNION_DETECTOR] = bool(verdicts["extended_intent"]) or bool(
+            verdicts["approval_bound"])
+    return rows
+
+
+def _error_kind(text: str) -> str:
+    """Collapse an error repr to its type-and-code prefix.  The raw string can
+    start with '<' (urllib's HTTPError repr), which a reportlab Paragraph would
+    parse as markup and silently swallow, so the label must never keep it."""
+    return (text or "").split("(")[0].split(":")[0].strip("<> ").strip()
 
 # Families grouped by which contract version enumerates the observation they
 # touch.  The aggregate over all families is a function of this mix, so every
@@ -32,7 +52,7 @@ BENIGN_FAMILIES = {"clean", "normalisation", "resubmit", "migration"}
 # Paper-facing letters.  Written once here so a table and a sentence can never
 # disagree about which group a bootstrap interval belongs to.
 GROUP_LETTER = {"both": "A", "v4_only": "B", "neither": "C", "unseen": "D", "fuzz": "E"}
-CI_DETECTORS = ("frozen_intent", "extended_intent", "approval_bound")
+CI_DETECTORS = ("frozen_intent", "extended_intent", "approval_bound", UNION_DETECTOR)
 
 # Criteria fixed before the evaluation matrix ran.  Each one is a threshold and
 # a direction, and the verdict below is computed from the observation rather
@@ -53,9 +73,9 @@ GATES = [
     {"id": "recall_D_both", "label": "D 비열거 영수증 Recall ≥ .90 (양쪽)",
      "metric": "recall", "group": "unseen", "detectors": ["extended_intent", "approval_bound"],
      "op": ">=", "threshold": 0.90},
-    {"id": "fpr_all", "label": "FPR ≤ .05 (전체)", "metric": "fpr",
+    {"id": "fpr_all", "label": "FPR ≤ .05 (전체, 값 계약)", "metric": "fpr",
      "detectors": ["extended_intent"], "op": "<=", "threshold": 0.05},
-    {"id": "fpr_excl_resubmit", "label": "FPR ≤ .05 (재제출 제외)", "metric": "fpr_excl",
+    {"id": "fpr_excl_resubmit", "label": "FPR ≤ .05 (재제출 제외, 값 계약)", "metric": "fpr_excl",
      "detectors": ["extended_intent"], "op": "<=", "threshold": 0.05},
     {"id": "latency_contract", "label": "계약 계산 p95 ≤ 200 ms", "metric": "latency",
      "key": "contract_p95", "op": "<=", "threshold": 200.0, "unit": "ms"},
@@ -93,6 +113,24 @@ def cluster_ci(rows: list[dict], key: str, metric: str, samples: int = 2000) -> 
 
 def cluster_count(rows: list[dict]) -> int:
     return len({(r["tool"], r["family"], r["trigger"]) for r in rows})
+
+
+def cluster_diff_ci(rows: list[dict], key_a: str, key_b: str, metric: str,
+                    samples: int = 2000) -> list[float]:
+    """Bootstrap interval for the *difference* of one metric between two
+    detectors, resampled over the same condition clusters so the comparison is
+    paired rather than two overlapping marginal intervals."""
+    buckets: dict[tuple, list[dict]] = defaultdict(list)
+    for row in rows:
+        buckets[(row["tool"], row["family"], row["trigger"])].append(row)
+    keys = list(buckets)
+    rng = random.Random(20260814)
+    values = []
+    for _ in range(samples):
+        drawn = [r for k in (rng.choice(keys) for _ in keys) for r in buckets[k]]
+        values.append(score(drawn, key_a)[metric] - score(drawn, key_b)[metric])
+    values.sort()
+    return [values[int(0.025 * samples)], values[int(0.975 * samples) - 1]]
 
 
 def evaluate_gates(report: dict) -> list[dict]:
@@ -153,6 +191,19 @@ def check_consistency(report: dict) -> list[str]:
                       if f in report["by_family"])
         if counted != report["by_group"][group]["attacks"]:
             problems.append(f"group {group} family attack counts do not sum to the group total")
+    # The composed defence is defined as an OR of two stored verdicts, so its
+    # rate can never sit below either component; if it does, the augmentation
+    # ran on different rows than the components were scored on.
+    for group, entry in report["by_group"].items():
+        recall = entry["recall"]
+        union = recall.get(UNION_DETECTOR)
+        if union is None:
+            continue
+        floor = max(recall.get("extended_intent") or 0.0,
+                    recall.get("approval_bound") or 0.0)
+        if union + 1e-9 < floor:
+            problems.append(f"union recall below its components: group={group} "
+                            f"union={union:.4f} floor={floor:.4f}")
     # The label is produced by two independent implementations.  If they ever
     # disagree, one of them is wrong and no number below it can be trusted.
     if report["oracle"]["disagreements"]:
@@ -214,7 +265,8 @@ def holdout_report(path: Path) -> dict:
     by a fixed rule, so the objection that the contracts were written to match
     the attacks does not apply to these numbers.
     """
-    rows = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line]
+    rows = augment_union([json.loads(line) for line
+                          in path.read_text(encoding="utf-8").splitlines() if line])
     meta_path = Path(str(path) + ".meta.json")
     meta = json.loads(meta_path.read_text(encoding="utf-8")) if meta_path.exists() else {}
     independent = [r for r in rows if r["observer"] == "independent"]
@@ -275,7 +327,8 @@ def drift_report(paths: list[Path]) -> dict:
     alarm is a false positive by construction."""
     out = {}
     for path in paths:
-        rows = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line]
+        rows = augment_union([json.loads(line) for line
+                              in path.read_text(encoding="utf-8").splitlines() if line])
         if not rows:
             continue
         kind = rows[0].get("drift", "none")
@@ -300,7 +353,8 @@ def real_mcp_report(path: Path) -> dict:
     always echoes the approved call, the group blind spots reproduce on a real
     transport, and a transport fault is separable from a semantic deviation.
     """
-    rows = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line]
+    rows = augment_union([json.loads(line) for line
+                          in path.read_text(encoding="utf-8").splitlines() if line])
     meta_path = Path(str(path) + ".meta.json")
     meta = json.loads(meta_path.read_text(encoding="utf-8")) if meta_path.exists() else {}
     clean = [r for r in rows if r["fault"] == "none"]
@@ -392,7 +446,8 @@ def main() -> None:
     parser.add_argument("--holdout", type=Path)
     parser.add_argument("--out", type=Path, required=True)
     args = parser.parse_args()
-    rows = [json.loads(line) for line in args.main.read_text(encoding="utf-8").splitlines() if line]
+    rows = augment_union([json.loads(line) for line
+                          in args.main.read_text(encoding="utf-8").splitlines() if line])
     independent = [r for r in rows if r["observer"] == "independent"]
     self_report = [r for r in rows if r["observer"] == "self_report"]
 
@@ -537,6 +592,46 @@ def main() -> None:
             "enumerated": len(_REQ[tool]), "declared": len(_ARGS[tool]),
             "share": len(_REQ[tool]) / len(_ARGS[tool]),
         }
+    # Why the frozen contract edges past the extended one on the fuzz family.
+    # Diagnosed row by row from the stored verdicts and receipts rather than
+    # asserted: on every row only v3 catches, the mutation landed outside both
+    # contracts' enumeration and the approved input itself was unnormalised, so
+    # v3's normalisation-ignorance alarm fell on an attack row and counted as a
+    # true positive.  The rows only v4 catches are mutations of the unit field,
+    # which v4 enumerates and v3 does not.
+    from provider import normalise as _normalise
+    fuzz_attacks = [r for r in independent if r["family"] == "fuzz_field" and r["truth"]]
+    v3_only = [r for r in fuzz_attacks
+               if r["detectors"]["frozen_intent"] and not r["detectors"]["extended_intent"]]
+    v4_only = [r for r in fuzz_attacks
+               if r["detectors"]["extended_intent"] and not r["detectors"]["frozen_intent"]]
+
+    def _mutated_fields(row: dict) -> list[str]:
+        expected, effect = _normalise(dict(row["approved"])), row["primary_args"]
+        return sorted(k for k in set(expected) | set(effect)
+                      if str(expected.get(k)) != str(effect.get(k)))
+
+    def _v4_enumerates(tool: str) -> set:
+        return set(_REQ[tool]) | ({"unit"} if "amount" in _REQ[tool] else set())
+
+    report["fuzz_v3_v4_disagreement"] = {
+        "v3_only": len(v3_only),
+        "v3_only_mutation_outside_enumeration": sum(
+            1 for r in v3_only
+            if all(f not in _v4_enumerates(r["tool"]) for f in _mutated_fields(r))),
+        "v3_only_unnormalised_anchor": sum(
+            1 for r in v3_only if _normalise(dict(r["approved"])) != r["approved"]),
+        "v4_only": len(v4_only),
+        "v4_only_unit_mutation": sum(1 for r in v4_only if "unit" in _mutated_fields(r)),
+    }
+    # The paper's B-group comparison (v4 vs approval binding) as a paired
+    # difference over the same clusters, not two overlapping marginal intervals.
+    b_rows = [r for r in independent if r["truth"] and r["family"] in GROUP_V4_ONLY]
+    report["b_paired_diff"] = {
+        "point": (score(b_rows, "extended_intent")["recall"]
+                  - score(b_rows, "approval_bound")["recall"]),
+        "ci95": cluster_diff_ci(b_rows, "extended_intent", "approval_bound", "recall"),
+    }
     # A measured FPR of zero is not evidence of a zero rate.  Report the
     # rule-of-three upper bound so the prevalence re-weighting stays honest.
     benign_clean = [r for r in no_resubmit if not r["truth"]]
@@ -610,7 +705,7 @@ def main() -> None:
                              for m in sorted({r["model"] for r in llm})},
             "error_kinds": dict(sorted(((k, v) for k, v in
                                         __import__("collections").Counter(
-                                            (r["error"] or "").split("(")[0] for r in llm if r.get("error")).items()),
+                                            _error_kind(r["error"]) for r in llm if r.get("error")).items()),
                                        key=lambda kv: -kv[1])),
             "deviation_fields": dict(sorted(((k, v) for k, v in
                                              __import__("collections").Counter(
@@ -675,7 +770,7 @@ def main() -> None:
                 # An HTTP 400 means the runtime refused the tool-calling request
                 # outright; that is an API capability limit, not a measurement
                 # of how well the model fills arguments.  Keep them separable.
-                "errors": dict(_Counter((r["error"] or "").split(":")[0].strip("<")
+                "errors": dict(_Counter(_error_kind(r["error"])
                                         for r in local if r["model"] == m and r.get("error")))}
             for m in report["llm_local"]["models"]}
 
@@ -734,7 +829,10 @@ def main() -> None:
     report["consistency"] = {"checked": True, "problems": problems}
 
     args.out.parent.mkdir(parents=True, exist_ok=True)
-    args.out.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    # newline="\n" so the artifact is byte-identical across operating systems;
+    # a Windows default of os.linesep would change every recorded digest.
+    args.out.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n",
+                        encoding="utf-8", newline="\n")
     print(json.dumps({k: report[k] for k in ("rows", "conditions", "sample_decomposition",
                                              "attacks_independent", "benign_independent",
                                              "latency_ms")}, ensure_ascii=False, indent=1))

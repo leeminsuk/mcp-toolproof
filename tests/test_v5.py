@@ -372,6 +372,47 @@ class HoldoutConversion(unittest.TestCase):
             self.assertEqual(spec["required"], published[name.split(".", 1)[1]])
 
 
+class ComposedDefence(unittest.TestCase):
+    """The composed row in table 2 is an OR of two verdicts already frozen in
+    the logs, not a new detector run; pin that definition."""
+
+    def test_union_is_the_or_of_the_two_stored_verdicts(self):
+        rows = [{"detectors": {"extended_intent": a, "approval_bound": b}}
+                for a in (False, True) for b in (False, True)]
+        analyze.augment_union(rows)
+        for row in rows:
+            verdicts = row["detectors"]
+            self.assertEqual(verdicts[analyze.UNION_DETECTOR],
+                             verdicts["extended_intent"] or verdicts["approval_bound"])
+
+    def test_error_labels_survive_a_markup_hungry_renderer(self):
+        # "<HTTPError 400: 'Bad Request'>" once printed as an empty label in
+        # the appendix audit table, because a reportlab Paragraph parses a
+        # leading '<' as markup.  The collapsed label must never keep it.
+        self.assertEqual(analyze._error_kind("<HTTPError 400: 'Bad Request'>"),
+                         "HTTPError 400")
+        self.assertEqual(analyze._error_kind("RuntimeError('tool_call_count=0')"),
+                         "RuntimeError")
+        self.assertEqual(analyze._error_kind(None), "")
+
+
+class ParticleSelection(unittest.TestCase):
+    def test_rieul_final_digits_take_ro_not_euro(self):
+        # 일·칠·팔 end in ㄹ, which takes 로 — the one exception to the
+        # consonant rule, and the source of "0.078으로" in an earlier revision.
+        import make_paper as mp
+        self.assertEqual(mp.jo("0.078", "으로/로"), "로")
+        self.assertEqual(mp.jo("0.087", "으로/로"), "로")
+        self.assertEqual(mp.jo("0.441", "으로/로"), "로")
+        self.assertEqual(mp.jo("0.153", "으로/로"), "으로")
+        self.assertEqual(mp.jo("0.000", "으로/로"), "으로")
+        # The exception is specific to 으로/로; other particles keep the rule.
+        self.assertEqual(mp.jo("0.078", "은/는"), "은")
+        self.assertEqual(mp.jo("0.441", "을/를"), "을")
+        self.assertEqual(mp.jo("0.556", "이다/다"), "이다")
+        self.assertEqual(mp.jo("0.769", "은/는"), "는")
+
+
 class TransportFaultSeparation(unittest.TestCase):
     """A verifier that cannot tell a network fault from a semantic deviation is
     not deployable, so the two must be separable in the record."""
